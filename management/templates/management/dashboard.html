@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-MAP Dashboard</title>
+    <style>
+        :root {
+            /* Abstract modern gradients */
+            --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b);
+            --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de);
+            --bg-color: #f4f5f7;
+            --text-dark: #222;
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            height: 100vh;
+        }
+        /* Sidebar styling */
+        .sidebar {
+            width: 250px;
+            background: var(--sidebar-grad);
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-top-right-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        .sidebar-menu {
+            list-style: none; padding: 0; margin-top: 50px;
+        }
+        .sidebar-menu li {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .sidebar-menu li:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        /* Header Cards (Company Name & Badges) */
+        .top-header {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+            align-items: center;
+        }
+        .company-card {
+            background: var(--primary-grad);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 20px;
+            font-size: 24px;
+            font-weight: 900;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .badge {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .badge span {
+            background: var(--primary-grad);
+            color: white;
+            border-radius: 50%;
+            width: 35px; height: 35px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        /* Grid for Categories */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+        }
+        .category-card {
+            background: white;
+            padding: 40px 20px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-dark);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-transform: uppercase;
+        }
+        .category-card:hover {
+            transform: translateY(-5px);
+            border-bottom: 4px solid #c94b4b;
+        }
+        .add-card {
+            font-size: 24px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2 style="text-align:center;">C-MAP</h2>
+        <ul class="sidebar-menu">
+            <li>Dashboard</li>
+            <li>Company</li>
+            <li>History</li>
+            <li>Settings</li>
+            <li>Logout</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="top-header">
+            <div class="company-card">
+                {% if company %}
+                    {{ company.name }}
+                {% else %}
+                    Setup Company Data
+                {% endif %}
+            </div>
+            <div class="badge"><span>10</span> Expire Soon</div>
+            <div class="badge"><span>5</span> Updated</div>
+        </div>
+
+        <div class="category-grid">
+            {% for cat in categories %}
+                <div class="category-card">
+                    {{ cat.name }}
+                </div>
+            {% endfor %}
+            
+            <div class="category-card add-card">
+                ADD +
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
