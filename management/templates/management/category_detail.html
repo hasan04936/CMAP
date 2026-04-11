@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C-MAP Dashboard</title>
+    <title>{{ category.name }} - C-MAP</title>
     <style>
         :root {
             --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b);
@@ -11,36 +11,36 @@
             --bg-color: #f4f5f7;
             --text-dark: #222;
         }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); z-index: 10; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
         .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
         .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
         .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-
+        
         .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
-        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-        .header-left { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;}
-
-        .company-card { background: var(--primary-grad); color: white; padding: 20px 40px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
-        .company-name { font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px;}
-        .company-details { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.5; }
-
-        .badge { background: white; padding: 15px 25px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: fit-content; margin-top: 10px; }
-        .badge span { background: var(--primary-grad); color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; }
-
+        
+        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .header-left { display: flex; gap: 20px; align-items: center; }
+        
+        .back-btn { background: white; color: var(--text-dark); padding: 15px 25px; border-radius: 15px; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.2s; }
+        .back-btn:hover { background: #e0e0e0; }
+        
+        .category-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        
         .company-logo-container { width: 80px; height: 80px; border-radius: 50%; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; overflow: hidden; border: 3px solid transparent; background-image: linear-gradient(white, white), var(--primary-grad); background-origin: border-box; background-clip: content-box, border-box; }
         .company-logo-container img { width: 100%; height: 100%; object-fit: cover; }
-        .logo-placeholder { font-weight: bold; color: #888; font-size: 12px; }
-
-        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; margin-bottom: auto; }
+        
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; margin-bottom: auto; margin-top: 20px; }
         .card-link { text-decoration: none; display: block; }
         .category-card { background: white; padding: 40px 20px; border-radius: 20px; text-align: center; font-size: 18px; font-weight: bold; color: var(--text-dark); box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; text-transform: uppercase; height: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; }
-        .category-card:hover { transform: translateY(-5px); border-bottom: 4px solid #c94b4b; }
+        .category-card:hover { transform: translateY(-5px); border-bottom: 4px solid #4b134f; }
         .add-card { font-size: 24px; color: #888; background: rgba(255,255,255,0.5); border: 2px dashed #ccc; }
         .add-card:hover { background: white; border: 2px dashed #4b134f; color: #4b134f; }
+        
+        .page-footer { text-align: center; color: #999; font-size: 12px; padding-top: 40px; padding-bottom: 10px; }
 
-        /* Modal Styles added to Dashboard */
+        /* Modal Styles added here too */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; }
         .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
@@ -48,15 +48,13 @@
         .form-group label { font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
         .form-group input { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit;}
         .submit-btn { background: var(--primary-grad); color: white; padding: 12px; border: none; border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
-        
-        .page-footer { text-align: center; color: #999; font-size: 12px; padding-top: 40px; padding-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2 style="text-align:center;">C-MAP</h2>
         <ul class="sidebar-menu">
-            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li style="background: rgba(255,255,255,0.2);">Dashboard</li></a>
+            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
             <li>Company</li>
             <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
             <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
@@ -71,41 +69,32 @@
     <div class="main-content">
         <div class="top-header">
             <div class="header-left">
-                <div class="company-card">
-                    {% if company %}
-                        <div class="company-name">{{ company.name }}</div>
-                        <div class="company-details">
-                            {% if company.district %}{{ company.district }}, {% endif %}{{ company.country|default:"Location Setup Pending" }}<br>
-                            {% if company.contact_number %}{{ company.contact_number }} | {% endif %}{{ company.email_address|default:"Email Pending" }}
-                        </div>
-                    {% else %}
-                        <div class="company-name">Setup Pending</div>
-                        <div class="company-details">Please complete wizard</div>
-                    {% endif %}
-                </div>
-                <div class="badge"><span>{{ expire_soon }}</span> Expire Soon </div>
-                <div class="badge"><span>{{ updated_today }}</span> Updated Today</div>
+                <a href="{% url 'dashboard' %}" class="back-btn">← Back</a>
+                <div class="category-title">{{ category.name }}</div>
             </div>
-
             <div class="company-logo-container">
                 {% if company.logo %}
                     <img src="{{ company.logo.url }}" alt="Company Logo">
                 {% else %}
-                    <div class="logo-placeholder">LOGO</div>
+                    <div style="font-weight: bold; color: #888; font-size: 12px;">LOGO</div>
                 {% endif %}
             </div>
         </div>
 
+        <h3 style="color: #555; margin-top: 10px;">Sub-Folders</h3>
+
         <div class="category-grid">
-            {% for cat in categories %}
-                <a href="{% url 'category_detail' cat.id %}" class="card-link">
+            {% for sub in subcategories %}
+                <a href="{% url 'subcategory_detail' sub.id %}" class="card-link">
                     <div class="category-card">
-                        {{ cat.name }}
+                        {{ sub.name }}
                     </div>
                 </a>
+            {% empty %}
+                <p style="color: #888; grid-column: 1 / -1;">No sub-categories created yet.</p>
             {% endfor %}
             
-            <div class="category-card add-card" onclick="openModal('addCategoryModal')">ADD +</div>
+            <div class="category-card add-card" onclick="openModal('addSubCategoryModal')">ADD +</div>
         </div>
 
         <div class="page-footer">
@@ -113,17 +102,20 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="addCategoryModal">
+    <div class="modal-overlay" id="addSubCategoryModal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('addCategoryModal')">&times;</span>
-            <h2 style="margin-top: 0; color: #4b134f;">New Main Folder</h2>
-            <form method="POST" action="{% url 'add_category' %}">
+            <span class="close-modal" onclick="closeModal('addSubCategoryModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #4b134f;">New Sub-Folder</h2>
+            <p style="font-size: 13px; color: #666; margin-top: -10px;">Adding inside: <strong>{{ category.name }}</strong></p>
+            
+            <form method="POST" action="{% url 'add_subcategory' %}">
                 {% csrf_token %}
+                <input type="hidden" name="category_id" value="{{ category.id }}">
                 <div class="form-group">
-                    <label>Folder Name</label>
-                    <input type="text" name="category_name" required placeholder="e.g., Licenses, Projects, etc.">
+                    <label>Sub-Folder Name</label>
+                    <input type="text" name="subcategory_name" required placeholder="e.g., ID, Contract, Bio Data">
                 </div>
-                <button type="submit" class="submit-btn">Create Folder</button>
+                <button type="submit" class="submit-btn">Create Sub-Folder</button>
             </form>
         </div>
     </div>

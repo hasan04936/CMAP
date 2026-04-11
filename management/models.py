@@ -2,21 +2,20 @@ from django.db import models
 from django.utils import timezone
 
 class Company(models.Model):
-    # Mandatory fields
     name = models.CharField(max_length=255)
-    local_place = models.CharField(max_length=255)
-    
-    # Optional setup fields
-    registration_number = models.CharField(max_length=100, blank=True, null=True)
-    cr_number = models.CharField(max_length=100, blank=True, null=True)
-    building_number = models.CharField(max_length=100, blank=True, null=True)
-    street_name = models.CharField(max_length=255, blank=True, null=True)
-    district = models.CharField(max_length=100, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-    country = models.CharField(max_length=100, blank=True, null=True)
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
     contact_number = models.CharField(max_length=50, blank=True, null=True)
     email_address = models.EmailField(blank=True, null=True)
-    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    district = models.CharField(max_length=100, blank=True, null=True)
+    
+    # NEW: Official Text Fields
+    tax_number = models.CharField(max_length=100, blank=True, null=True)
+    cr_number = models.CharField(max_length=100, blank=True, null=True)
+    license_number = models.CharField(max_length=100, blank=True, null=True)
+    
+    # NEW: Automatically records exactly when the company profile was created
+    created_date = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.name
@@ -68,6 +67,7 @@ class Document(models.Model):
     agent_name = models.CharField(max_length=255, blank=True, null=True)
     agent_contact = models.CharField(max_length=100, blank=True, null=True)
     uploaded_date = models.DateTimeField(default=timezone.now)
+    updated_date = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.title

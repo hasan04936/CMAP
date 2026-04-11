@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity History - C-MAP</title>
+    <style>
+        :root {
+            --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b);
+            --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de);
+            --bg-color: #f4f5f7;
+            --text-dark: #222;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
+        .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
+        .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
+        
+        .header-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); display: inline-block; margin-bottom: 30px; }
+        
+        /* History List Styling */
+        .history-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .history-item:last-child { border-bottom: none; }
+        .doc-name { font-size: 18px; font-weight: bold; color: var(--text-dark); margin-bottom: 5px; }
+        .doc-path { font-size: 13px; color: #888; }
+        .time-stamp { text-align: right; }
+        .time-date { font-weight: bold; color: #c94b4b; }
+        .time-hour { font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="text-align:center;">C-MAP</h2>
+        <ul class="sidebar-menu">
+            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
+            <li>Company</li>
+            <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li style="background: rgba(255,255,255,0.2);">History</li></a>
+            <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
+            <a href="#" style="text-decoration: none; color: white;"><li>Logout</li></a>
+        </ul>
+        <div class="sidebar-footer">
+            <p style="margin:0; font-weight:bold;">Powered by C-MAP Core</p>
+            <p style="margin:5px 0 0 0;">Version 1.0 | Enterprise</p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-title">System Activity History</div>
+
+        <div class="history-container">
+            {% for doc in recent_updates %}
+                <div class="history-item">
+                    <div>
+                        <div class="doc-name">{{ doc.title }}</div>
+                        <div class="doc-path">Folder: {{ doc.category.name }} > {{ doc.sub_category.name }}</div>
+                    </div>
+                    <div class="time-stamp">
+                        <div class="time-date">{{ doc.updated_date|date:"F d, Y" }}</div>
+                        <div class="time-hour">{{ doc.updated_date|date:"h:i A" }}</div>
+                    </div>
+                </div>
+            {% empty %}
+                <p style="color: #888; text-align: center;">No activity recorded yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

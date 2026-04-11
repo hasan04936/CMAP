@@ -1,24 +1,18 @@
-"""
-URL configuration for cmap_project project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from management import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.dashboard, name='dashboard'), # This makes the dashboard your homepage
-]
+    path('', views.dashboard, name='dashboard'),
+    path('category/<int:category_id>/', views.category_detail, name='category_detail'),
+    path('subcategory/<int:subcategory_id>/', views.subcategory_detail, name='subcategory_detail'),
+    path('document/<int:document_id>/delete/', views.delete_document, name='delete_document'),
+    path('document/<int:document_id>/edit/', views.edit_document, name='edit_document'),
+    path('history/', views.history_log, name='history_log'),
+    path('settings/', views.settings_page, name='settings'),
+    path('settings/category/add/', views.add_category, name='add_category'),
+    path('settings/subcategory/add/', views.add_subcategory, name='add_subcategory'),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
