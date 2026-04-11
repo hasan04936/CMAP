@@ -30,18 +30,20 @@
         .form-group label { font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
         .form-group input, .form-group select { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit;}
         .submit-btn { background: var(--primary-grad); color: white; padding: 12px; border: none; border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
-        .submit-btn:hover { transform: translateY(-2px); }
-
+        
         .company-logo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; margin-bottom: 10px; }
         
         /* Category List Styles */
         .cat-item { background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 4px solid #c94b4b; }
         .cat-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; color: #333;}
         .subcat-list { margin-top: 10px; padding-left: 15px; border-left: 2px dashed #ddd; }
-        .subcat-item { font-size: 14px; color: #666; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;}
+        .subcat-item { font-size: 14px; color: #555; padding: 8px 0; display: flex; justify-content: space-between; align-items: center;}
         
-        .btn-small { background: white; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; color: #4b134f;}
+        .btn-small { background: white; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; color: #4b134f;}
         .btn-small:hover { background: #eee; }
+        
+        .icon-btn { cursor: pointer; font-size: 14px; margin-left: 10px; opacity: 0.6; transition: 0.2s; }
+        .icon-btn:hover { opacity: 1; }
 
         /* Modal Styles */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
@@ -105,7 +107,6 @@
                     </div>
                     
                     <button type="submit" class="submit-btn">Save Company Details</button>
-                    
                     <div style="text-align: center; margin-top: 15px; font-size: 11px; color: #888; font-weight: bold;">
                         Profile Created: {{ company.created_date|date:"F d, Y" }}
                     </div>
@@ -120,13 +121,26 @@
                     {% for cat in categories %}
                     <div class="cat-item">
                         <div class="cat-header">
-                            {{ cat.name }}
+                            <span style="display: flex; align-items: center;">
+                                {{ cat.name }}
+                                <span class="icon-btn" onclick="openEditCatModal('{{ cat.id }}', '{{ cat.name|escapejs }}')">✏️</span>
+                                <span class="icon-btn" style="color:red;" onclick="openDelCatModal('{{ cat.id }}', '{{ cat.name|escapejs }}')">🗑️</span>
+                            </span>
                             <button class="btn-small" onclick="openSubCategoryModal('{{ cat.id }}', '{{ cat.name|escapejs }}')">+ Add Sub-Folder</button>
                         </div>
                         
                         <div class="subcat-list">
                             {% for sub in cat.subcategories.all %}
-                                <div class="subcat-item">↳ {{ sub.name }}</div>
+                                <div class="subcat-item">
+                                    <span>↳ {{ sub.name }}</span>
+                                    <span>
+                                        <a href="{% url 'manage_fields' sub.id %}" style="text-decoration: none;">
+                                            <span class="icon-btn" style="color: #7597de;" title="Manage Fields">⚙️ Fields</span>
+                                        </a>
+                                        <span class="icon-btn" onclick="openEditSubCatModal('{{ sub.id }}', '{{ sub.name|escapejs }}')">✏️</span>
+                                        <span class="icon-btn" style="color:red;" onclick="openDelSubCatModal('{{ sub.id }}', '{{ sub.name|escapejs }}')">🗑️</span>
+                                    </span>
+                                </div>
                             {% empty %}
                                 <div class="subcat-item" style="color:#aaa;">No sub-folders yet.</div>
                             {% endfor %}
@@ -143,34 +157,69 @@
     </div>
 
     <div class="modal-overlay" id="addCategoryModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('addCategoryModal')">&times;</span>
+        <div class="modal-content"><span class="close-modal" onclick="closeModal('addCategoryModal')">&times;</span>
             <h2 style="margin-top: 0; color: #4b134f;">New Main Folder</h2>
             <form method="POST" action="{% url 'add_category' %}">
                 {% csrf_token %}
-                <div class="form-group">
-                    <label>Folder Name</label>
-                    <input type="text" name="category_name" required placeholder="e.g., Licenses, Projects, etc.">
-                </div>
+                <div class="form-group"><label>Folder Name</label><input type="text" name="category_name" required></div>
                 <button type="submit" class="submit-btn">Create Folder</button>
             </form>
         </div>
     </div>
 
     <div class="modal-overlay" id="addSubCategoryModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('addSubCategoryModal')">&times;</span>
+        <div class="modal-content"><span class="close-modal" onclick="closeModal('addSubCategoryModal')">&times;</span>
             <h2 style="margin-top: 0; color: #4b134f;">New Sub-Folder</h2>
             <p style="font-size: 13px; color: #666; margin-top: -10px;">Adding inside: <strong id="parentCategoryName"></strong></p>
-            
             <form method="POST" action="{% url 'add_subcategory' %}">
                 {% csrf_token %}
                 <input type="hidden" name="category_id" id="hiddenCategoryId">
-                <div class="form-group">
-                    <label>Sub-Folder Name</label>
-                    <input type="text" name="subcategory_name" required placeholder="e.g., Health Insurance, Visas, etc.">
-                </div>
+                <div class="form-group"><label>Sub-Folder Name</label><input type="text" name="subcategory_name" required></div>
                 <button type="submit" class="submit-btn">Create Sub-Folder</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editCatModal">
+        <div class="modal-content"><span class="close-modal" onclick="closeModal('editCatModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #4b134f;">Edit Main Folder</h2>
+            <form method="POST" id="editCatForm">
+                {% csrf_token %}
+                <div class="form-group"><label>New Name</label><input type="text" name="category_name" id="editCatNameInput" required></div>
+                <button type="submit" class="submit-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="delCatModal">
+        <div class="modal-content" style="text-align: center;"><span class="close-modal" onclick="closeModal('delCatModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #c94b4b;">Delete Folder?</h2>
+            <p>Delete <strong id="delCatName"></strong>?<br><span style="font-size:12px; color:red;">Warning: This deletes all sub-folders and documents inside it!</span></p>
+            <form method="POST" id="delCatForm">
+                {% csrf_token %}
+                <button type="submit" class="submit-btn" style="background:#c94b4b;">Yes, Delete Everything</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editSubCatModal">
+        <div class="modal-content"><span class="close-modal" onclick="closeModal('editSubCatModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #4b134f;">Edit Sub-Folder</h2>
+            <form method="POST" id="editSubCatForm">
+                {% csrf_token %}
+                <div class="form-group"><label>New Name</label><input type="text" name="subcategory_name" id="editSubCatNameInput" required></div>
+                <button type="submit" class="submit-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="delSubCatModal">
+        <div class="modal-content" style="text-align: center;"><span class="close-modal" onclick="closeModal('delSubCatModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #c94b4b;">Delete Sub-Folder?</h2>
+            <p>Delete <strong id="delSubCatName"></strong>?<br><span style="font-size:12px; color:red;">Warning: This deletes all documents inside it!</span></p>
+            <form method="POST" id="delSubCatForm">
+                {% csrf_token %}
+                <button type="submit" class="submit-btn" style="background:#c94b4b;">Yes, Delete Everything</button>
             </form>
         </div>
     </div>
@@ -179,11 +228,34 @@
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        // This custom function pre-fills the Sub-Category modal so it knows exactly where to save it!
         function openSubCategoryModal(categoryId, categoryName) {
             document.getElementById('hiddenCategoryId').value = categoryId;
             document.getElementById('parentCategoryName').innerText = categoryName;
             openModal('addSubCategoryModal');
+        }
+
+        // Edit/Delete Category Modals
+        function openEditCatModal(id, name) {
+            document.getElementById('editCatForm').action = `/settings/category/${id}/edit/`;
+            document.getElementById('editCatNameInput').value = name;
+            openModal('editCatModal');
+        }
+        function openDelCatModal(id, name) {
+            document.getElementById('delCatForm').action = `/settings/category/${id}/delete/`;
+            document.getElementById('delCatName').innerText = name;
+            openModal('delCatModal');
+        }
+
+        // Edit/Delete Sub-Category Modals
+        function openEditSubCatModal(id, name) {
+            document.getElementById('editSubCatForm').action = `/settings/subcategory/${id}/edit/`;
+            document.getElementById('editSubCatNameInput').value = name;
+            openModal('editSubCatModal');
+        }
+        function openDelSubCatModal(id, name) {
+            document.getElementById('delSubCatForm').action = `/settings/subcategory/${id}/delete/`;
+            document.getElementById('delSubCatName').innerText = name;
+            openModal('delSubCatModal');
         }
 
         window.addEventListener('click', (event) => {

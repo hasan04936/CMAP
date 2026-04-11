@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from datetime import timedelta
-from .models import Company, Category, SubCategory, Document
+from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue
 
 def dashboard(request):
     company = Company.objects.first()
@@ -45,25 +45,42 @@ def subcategory_detail(request, subcategory_id):
     
     # 1. POST: Handle Form Submissions
     if request.method == 'POST':
-        title = request.POST.get('title')
-        uploaded_file = request.FILES.get('document_file')
-        issue_date = request.POST.get('issue_date') or None
-        expire_date = request.POST.get('expire_date') or None
-        agent_name = request.POST.get('agent_name')
-        agent_contact = request.POST.get('agent_contact')
+        # Generate a dynamic title since we removed the input field
+        dynamic_title = f"{subcategory.name} Entry - {timezone.now().strftime('%Y%m%d_%H%M%S')}"
         
-        if title and uploaded_file:
-            Document.objects.create(
-                title=title,
-                file=uploaded_file,
-                category=subcategory.category,
-                sub_category=subcategory,
-                issue_date=issue_date,
-                expire_date=expire_date,
-                agent_name=agent_name,
-                agent_contact=agent_contact
-            )
-            return redirect('subcategory_detail', subcategory_id=subcategory.id)
+        # Step A: Create the base Document (No file required initially)
+        doc = Document.objects.create(
+            title=dynamic_title,
+            category=subcategory.category,
+            sub_category=subcategory,
+        )
+        
+        # Step B: Loop through and save all Custom Fields dynamically!
+        for field in subcategory.custom_fields.all():
+            input_name = f"custom_{field.id}" 
+            
+            if field.field_type == 'file':
+                file_val = request.FILES.get(input_name)
+                if file_val:
+                    CustomFieldValue.objects.create(document=doc, custom_field=field, file_value=file_val)
+            else:
+                text_val = request.POST.get(input_name)
+                if text_val:
+                    CustomFieldValue.objects.create(document=doc, custom_field=field, value=text_val)
+                    
+        return redirect('subcategory_detail', subcategory_id=subcategory.id)
+    # ... rest of the function remains the same
+
+    # 2. GET: Display the Page
+    documents = Document.objects.filter(sub_category=subcategory).order_by('-id')
+    context = {
+        'company': company,
+        'subcategory': subcategory,
+        'documents': documents,
+        # NEW: Send the custom fields to the HTML page!
+        'custom_fields': subcategory.custom_fields.all(), 
+    }
+    return render(request, 'management/subcategory_detail.html', context)
 
     # 2. GET: Display the Page
     documents = Document.objects.filter(sub_category=subcategory).order_by('-id')
@@ -85,22 +102,29 @@ def delete_document(request, document_id):
 
 def edit_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
-    subcategory_id = document.sub_category.id
+    subcategory = document.sub_category
     
     if request.method == 'POST':
-        document.title = request.POST.get('title')
-        document.issue_date = request.POST.get('issue_date') or None
-        document.expire_date = request.POST.get('expire_date') or None
-        document.agent_name = request.POST.get('agent_name')
-        document.agent_contact = request.POST.get('agent_contact')
+    
         
-        new_file = request.FILES.get('document_file')
-        if new_file:
-            document.file = new_file
+        # Loop through all dynamic fields and update their specific values
+        for field in subcategory.custom_fields.all():
+            input_name = f"custom_{field.id}"
+            custom_val, created = CustomFieldValue.objects.get_or_create(document=document, custom_field=field)
             
+            if field.field_type == 'file':
+                file_val = request.FILES.get(input_name)
+                if file_val:
+                    custom_val.file_value = file_val
+                    custom_val.save()
+            else:
+                text_val = request.POST.get(input_name)
+                if text_val is not None:
+                    custom_val.value = text_val
+                    custom_val.save()
+                    
         document.save()
-        
-    return redirect('subcategory_detail', subcategory_id=subcategory_id)
+    return redirect('subcategory_detail', subcategory_id=subcategory.id)
 
 def history_log(request):
     company = Company.objects.first()
@@ -159,3 +183,69 @@ def add_subcategory(request):
             category = get_object_or_404(Category, id=category_id)
             SubCategory.objects.create(name=name, category=category)
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+def edit_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if request.method == 'POST':
+        name = request.POST.get('category_name')
+        if name:
+            category.name = name
+            category.save()
+    return redirect('settings')
+
+def delete_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if request.method == 'POST':
+        category.delete()
+    return redirect('settings')
+
+def edit_subcategory(request, subcategory_id):
+    subcategory = get_object_or_404(SubCategory, id=subcategory_id)
+    if request.method == 'POST':
+        name = request.POST.get('subcategory_name')
+        if name:
+            subcategory.name = name
+            subcategory.save()
+    return redirect('settings')
+
+def delete_subcategory(request, subcategory_id):
+    subcategory = get_object_or_404(SubCategory, id=subcategory_id)
+    if request.method == 'POST':
+        subcategory.delete()
+    return redirect('settings')
+
+def manage_fields(request, subcategory_id):
+    # Get the specific sub-folder we are building fields for
+    subcategory = get_object_or_404(SubCategory, id=subcategory_id)
+    
+    if request.method == 'POST':
+        # Check if we are ADDING a field
+        # Check if we are ADDING a field
+        if 'add_field' in request.POST:
+            field_name = request.POST.get('field_name')
+            field_type = request.POST.get('field_type')
+            is_required = request.POST.get('is_required') == 'on' 
+            show_on_card = request.POST.get('show_on_card') == 'on' # NEW CHECKBOX
+            
+            if field_name:
+                CustomField.objects.create(
+                    sub_category=subcategory,
+                    field_name=field_name,
+                    field_type=field_type,
+                    is_required=is_required,
+                    show_on_card=show_on_card # SAVES IT!
+                )
+                
+        # Check if we are DELETING a field
+        elif 'delete_field' in request.POST:
+            field_id = request.POST.get('field_id')
+            CustomField.objects.filter(id=field_id).delete()
+            
+        return redirect('manage_fields', subcategory_id=subcategory.id)
+
+    context = {
+        'subcategory': subcategory,
+        # Get all fields already created for this folder
+        'fields': subcategory.custom_fields.all() 
+    }
+    return render(request, 'management/manage_fields.html', context)

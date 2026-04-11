@@ -71,3 +71,31 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+    
+# NEW: Defines the custom questions for a Sub-Category
+class CustomField(models.Model):
+    FIELD_TYPES = (
+        ('text', 'Short Text'),
+        ('date', 'Date Picker'),
+        ('number', 'Number Only'),
+        ('file', 'File / Image Upload'), # NEW: Added the File option!
+    )
+    sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE, related_name='custom_fields')
+    field_name = models.CharField(max_length=100)
+    field_type = models.CharField(max_length=20, choices=FIELD_TYPES, default='text')
+    is_required = models.BooleanField(default=False)
+
+    show_on_card = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.sub_category.name} -> {self.field_name}"
+
+class CustomFieldValue(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='custom_values')
+    custom_field = models.ForeignKey(CustomField, on_delete=models.CASCADE)
+    value = models.CharField(max_length=255, blank=True, null=True)
+    # NEW: A dedicated space to save uploaded images/files for custom fields
+    file_value = models.FileField(upload_to='custom_uploads/', blank=True, null=True) 
+
+    def __str__(self):
+        return f"{self.document.title} - {self.custom_field.field_name}"
