@@ -1,13 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from datetime import timedelta
-from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue
+from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue, UserProfile, HistoryLog
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from django.contrib.auth import update_session_auth_hash
 
 @login_required
 def dashboard(request):
@@ -97,6 +97,13 @@ def delete_document(request, document_id):
     subcategory_id = document.sub_category.id
     
     if request.method == 'POST':
+        # --- THE TRACKER: DOCUMENT DELETED ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Deleted", 
+            document_name=document.title, 
+            folder_path=f"{document.sub_category.category.name} > {document.sub_category.name}"
+        )
         document.delete()
         
     return redirect('subcategory_detail', subcategory_id=subcategory_id)
@@ -124,23 +131,29 @@ def edit_document(request, document_id):
                     custom_val.save()
                     
         document.save()
+        
+        # --- THE TRACKER: DOCUMENT EDITED ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Edited", 
+            document_name=document.title, 
+            folder_path=f"{subcategory.category.name} > {subcategory.name}"
+        )
+        
     return redirect('subcategory_detail', subcategory_id=subcategory.id)
 
 @login_required
 def history_log(request):
-    company = Company.objects.first()
-    # Grab all documents, ordered by the most recently updated first
-    recent_updates = Document.objects.all().order_by('-updated_date')
+    # Grab all history logs, ordered by newest first (-timestamp)
+    logs = HistoryLog.objects.all().order_by('-timestamp')
     
     context = {
-        'company': company,
-        'recent_updates': recent_updates,
+        'logs': logs,
     }
     return render(request, 'management/history.html', context)
 
 @login_required
 def settings_page(request):
-
     # ADD THIS TO THE TOP OF settings_page AND company_profile
     if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
         return redirect('dashboard') # Kicks them out if they try to hack the URL!
@@ -178,14 +191,34 @@ def edit_category(request, category_id):
     if request.method == 'POST':
         name = request.POST.get('category_name')
         if name:
+            old_name = category.name
             category.name = name
             category.save()
+            
+            # --- THE TRACKER: CATEGORY EDITED ---
+            HistoryLog.objects.create(
+                user=request.user, 
+                action="Edited", 
+                document_name=f"Folder: {old_name} -> {name}", 
+                folder_path="Settings > Architecture"
+            )
+            
     return redirect('settings')
 
 @login_required
 def delete_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
+        cat_name = category.name
+        
+        # --- THE TRACKER: CATEGORY DELETED ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Deleted", 
+            document_name=f"Main Folder: {cat_name}", 
+            folder_path="Settings > Architecture"
+        )
+        
         category.delete()
     return redirect('settings')
 
@@ -195,14 +228,35 @@ def edit_subcategory(request, subcategory_id):
     if request.method == 'POST':
         name = request.POST.get('subcategory_name')
         if name:
+            old_name = subcategory.name
             subcategory.name = name
             subcategory.save()
+            
+            # --- THE TRACKER: SUBCATEGORY EDITED ---
+            HistoryLog.objects.create(
+                user=request.user, 
+                action="Edited", 
+                document_name=f"Sub-Folder: {old_name} -> {name}", 
+                folder_path=f"Settings > Architecture > {subcategory.category.name}"
+            )
+            
     return redirect('settings')
 
 @login_required
 def delete_subcategory(request, subcategory_id):
     subcategory = get_object_or_404(SubCategory, id=subcategory_id)
     if request.method == 'POST':
+        sub_name = subcategory.name
+        cat_name = subcategory.category.name
+        
+        # --- THE TRACKER: SUBCATEGORY DELETED ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Deleted", 
+            document_name=f"Sub-Folder: {sub_name}", 
+            folder_path=f"Settings > Architecture > {cat_name}"
+        )
+        
         subcategory.delete()
     return redirect('settings')
 
@@ -231,7 +285,19 @@ def manage_fields(request, subcategory_id):
         # Check if we are DELETING a field
         elif 'delete_field' in request.POST:
             field_id = request.POST.get('field_id')
-            CustomField.objects.filter(id=field_id).delete()
+            field_to_delete = CustomField.objects.filter(id=field_id).first()
+            if field_to_delete:
+                field_name = field_to_delete.field_name
+                
+                # --- THE TRACKER: FIELD DELETED ---
+                HistoryLog.objects.create(
+                    user=request.user, 
+                    action="Deleted", 
+                    document_name=f"Database Field: {field_name}", 
+                    folder_path=f"Settings > Field Builder > {subcategory.name}"
+                )
+                
+                field_to_delete.delete()
             
         return redirect('manage_fields', subcategory_id=subcategory.id)
 
@@ -268,6 +334,15 @@ def company_profile(request):
             company.logo = request.FILES.get('company_logo')
             
         company.save()
+        
+        # --- THE TRACKER: COMPANY PROFILE UPDATED ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Edited", 
+            document_name="Company Details", 
+            folder_path="System > Company Profile"
+        )
+        
         return redirect('company_profile')
 
     return render(request, 'management/company_profile.html', {'company': company})
@@ -309,12 +384,23 @@ def add_user(request):
                 user.save()
                 
     return redirect('settings')
+
 @login_required
 def delete_user(request, user_id):
     user_to_delete = get_object_or_404(User, id=user_id)
     
     # SECURITY: Make sure they aren't trying to delete themselves!
     if request.method == 'POST' and user_to_delete != request.user:
+        deleted_username = user_to_delete.username
+        
+        # --- THE TRACKER: USER DELETED ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Deleted", 
+            document_name=f"User Account: {deleted_username}", 
+            folder_path="Settings > System Users"
+        )
+        
         user_to_delete.delete()
         
     return redirect('settings')
@@ -335,3 +421,46 @@ def admin_unlock(request):
             
     # If they type the wrong password, just send them back to the dashboard
     return redirect('dashboard')
+
+@login_required
+def change_avatar(request):
+    if request.method == 'POST':
+        avatar_file = request.FILES.get('avatar')
+        if avatar_file:
+            # Get the user's profile, or create one if it doesn't exist yet
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            profile.avatar = avatar_file
+            profile.save()
+
+            # --- THE TRACKER: AVATAR UPDATED ---
+            HistoryLog.objects.create(
+                user=request.user, 
+                action="Edited", 
+                document_name="Profile Avatar", 
+                folder_path="Settings > My User Profile"
+            )
+
+    return redirect('settings')
+
+@login_required
+def reset_password(request):
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        # Verify the passwords match and aren't empty
+        if new_password and new_password == confirm_password:
+            request.user.set_password(new_password)
+            request.user.save()
+            # This crucial line stops Django from logging you out after a password change!
+            update_session_auth_hash(request, request.user) 
+            
+            # --- THE TRACKER: PASSWORD UPDATED ---
+            HistoryLog.objects.create(
+                user=request.user, 
+                action="Edited", 
+                document_name="Account Password", 
+                folder_path="Settings > My User Profile"
+            )
+            
+    return redirect('settings')

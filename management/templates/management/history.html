@@ -70,19 +70,24 @@
         <div><div class="header-title">System Activity History</div></div>
 
         <div class="history-container">
-            {% for doc in recent_updates %}
+            {% for log in logs %}
                 <div class="history-item">
                     <div>
-                        <div class="doc-name">{{ doc.title }}</div>
-                        <div class="doc-path">Folder: {{ doc.category.name }} > {{ doc.sub_category.name }}</div>
+                        <div class="doc-name">
+                            {% if log.action == 'Deleted' %}🗑️{% elif log.action == 'Edited' %}✏️{% else %}📄{% endif %} 
+                            {{ log.action }}: {{ log.document_name }}
+                        </div>
+                        <div class="doc-path">
+                            Location: {{ log.folder_path }} &nbsp;|&nbsp; User: <b style="color: #6b213b; text-transform: capitalize;">{{ log.user.username }}</b>
+                        </div>
                     </div>
                     <div class="time-stamp">
-                        <div class="time-date">{{ doc.updated_date|date:"F d, Y" }}</div>
-                        <div class="time-hour">{{ doc.updated_date|date:"h:i A" }}</div>
+                        <div class="time-date">{{ log.timestamp|date:"F d, Y" }}</div>
+                        <div class="time-hour">{{ log.timestamp|date:"h:i A" }}</div>
                     </div>
                 </div>
             {% empty %}
-                <p style="color: #888; text-align: center; padding: 20px;">No activity recorded yet.</p>
+                <p style="color: #888; text-align: center; padding: 20px; font-weight: bold;">No system activity recorded yet.</p>
             {% endfor %}
         </div>
     </div>

@@ -95,7 +95,13 @@
                     <div class="header-name">{{ request.user.username }}</div>
                     <div class="header-role">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
                 </div>
-                <div class="header-avatar">{{ request.user.username|make_list|first|upper }}</div>
+                <div class="header-avatar" style="overflow: hidden;">
+                    {% if request.user.profile.avatar %}
+                        <img src="{{ request.user.profile.avatar.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        {{ request.user.username|make_list|first|upper }}
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -104,16 +110,21 @@
                 <div class="settings-card">
                     <h3>My User Profile</h3>
                     <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                        <div style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary-grad); color: white; display: flex; justify-content: center; align-items: center; font-size: 30px; font-weight: bold; box-shadow: 0 5px 10px rgba(0,0,0,0.1);">
-                            {{ request.user.username|make_list|first|upper }}
+                        <div style="width: 45px; height: 45px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; overflow: hidden;">
+                            {% if request.user.profile.avatar %}
+                                <img src="{{ request.user.profile.avatar.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                {{ request.user.username|make_list|first|upper }}
+                            {% endif %}
                         </div>
                         <div>
                             <div style="font-size: 20px; font-weight: bold; text-transform: capitalize; color: #333;">{{ request.user.username }}</div>
                             <div style="color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">{% if request.user.is_superuser %}System Administrator{% else %}Standard Staff{% endif %}</div>
                         </div>
                     </div>
-                    <button class="btn-small" style="width: 100%; padding: 12px; margin-bottom: 10px; font-size: 14px;">Change Avatar</button>
-                    <button class="btn-small" style="width: 100%; padding: 12px; color: #c94b4b; border-color: #ffcdd2; background: #ffebee; font-size: 14px;">Reset Password</button>
+                    <button class="btn-small" style="width: 100%; padding: 12px; margin-bottom: 10px; font-size: 14px;" onclick="openModal('avatarModal')">Change Avatar</button>
+                    <button class="btn-small" style="width: 100%; padding: 12px; color: #c94b4b; border-color: #ffcdd2; background: #ffebee; font-size: 14px;" onclick="openModal('passwordModal')">Reset Password</button>
+                    
                 </div>
 
                 <div class="settings-card">
@@ -206,6 +217,40 @@
     <div class="modal-overlay" id="deleteCategoryModal"><div class="modal-content" style="width: 350px; text-align: center;"><span class="close-modal" onclick="closeModal('deleteCategoryModal')">&times;</span><h2 style="margin-top: 0; color: #c94b4b;">Delete Folder</h2><p style="font-size: 13px; color: #555;">Warning: This deletes the folder and ALL sub-folders inside it.</p><form method="POST" id="deleteCategoryForm">{% csrf_token %}<button type="submit" class="submit-btn" style="background: #c94b4b;">Yes, Delete</button></form></div></div>
     <div class="modal-overlay" id="editSubCategoryModal"><div class="modal-content"><span class="close-modal" onclick="closeModal('editSubCategoryModal')">&times;</span><h2 style="margin-top: 0; color: #4b134f;">Rename Sub-Folder</h2><form method="POST" id="editSubCategoryForm">{% csrf_token %}<div class="form-group"><label>New Name</label><input type="text" name="subcategory_name" id="editSubCategoryName" required></div><button type="submit" class="submit-btn">Save Changes</button></form></div></div>
     <div class="modal-overlay" id="deleteSubCategoryModal"><div class="modal-content" style="width: 350px; text-align: center;"><span class="close-modal" onclick="closeModal('deleteSubCategoryModal')">&times;</span><h2 style="margin-top: 0; color: #c94b4b;">Delete Sub-Folder</h2><p style="font-size: 13px; color: #555;">Warning: This deletes all data inside this sub-folder.</p><form method="POST" id="deleteSubCategoryForm">{% csrf_token %}<button type="submit" class="submit-btn" style="background: #c94b4b;">Yes, Delete</button></form></div></div>
+
+   <div class="modal-overlay" id="passwordModal">
+        <div class="modal-content" style="width: 350px;">
+            <span class="close-modal" onclick="closeModal('passwordModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #c94b4b;">Reset Password</h2>
+            <form method="POST" action="{% url 'reset_password' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" required placeholder="Enter new password">
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" name="confirm_password" required placeholder="Type password again">
+                </div>
+                <button type="submit" class="submit-btn" style="background: #c94b4b;">Update Password</button>
+            </form>
+        </div>
+    </div>
+    <div class="modal-overlay" id="avatarModal">
+        <div class="modal-content" style="width: 350px;">
+            <span class="close-modal" onclick="closeModal('avatarModal')">&times;</span>
+            <h2 style="margin-top: 0; color: #4b134f;">Upload Avatar</h2>
+            
+            <form method="POST" action="{% url 'change_avatar' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label style="font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #444;">Select Profile Picture</label>
+                    <input type="file" name="avatar" accept="image/*" required style="padding: 10px; border: 2px dashed #ccc; border-radius: 10px; font-size: 13px; width: 100%; box-sizing: border-box; background: #f9f9f9; cursor: pointer;">
+                </div>
+                <button type="submit" class="submit-btn">Save Image</button>
+            </form>
+        </div>
+    </div>
 
     <script>
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }

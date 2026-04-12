@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 class Company(models.Model):
     name = models.CharField(max_length=255)
@@ -21,6 +22,13 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+    
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
 
 class Category(models.Model):
     name = models.CharField(max_length=100) # e.g., Employees, Co Documents, Vehicles
@@ -101,3 +109,13 @@ class CustomFieldValue(models.Model):
 
     def __str__(self):
         return f"{self.document.title} - {self.custom_field.field_name}"
+    
+class HistoryLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=50) # Will store "Uploaded", "Edited", or "Deleted"
+    document_name = models.CharField(max_length=255, default="Unnamed Entry")
+    folder_path = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} {self.action} {self.document_name}"
