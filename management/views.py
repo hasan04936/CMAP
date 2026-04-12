@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 
 @login_required
 def dashboard(request):
@@ -138,6 +140,10 @@ def history_log(request):
 
 @login_required
 def settings_page(request):
+
+    # ADD THIS TO THE TOP OF settings_page AND company_profile
+    if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
+        return redirect('dashboard') # Kicks them out if they try to hack the URL!
     categories = Category.objects.all()
     # Grab all users registered in the system
     users = User.objects.all()
@@ -242,6 +248,9 @@ def custom_logout(request):
 
 @login_required
 def company_profile(request):
+    # ADD THIS TO THE TOP OF settings_page AND company_profile
+    if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
+        return redirect('dashboard') # Kicks them out if they try to hack the URL!
     # Get or create the company profile so it never crashes
     company, created = Company.objects.get_or_create(id=1)
 
@@ -280,3 +289,49 @@ def global_search(request):
         'results': results,
     }
     return render(request, 'management/search_results.html', context)
+
+@login_required
+def add_user(request):
+    if request.method == 'POST':
+        new_username = request.POST.get('username')
+        new_password = request.POST.get('password')
+        role = request.POST.get('role') # 'admin' or 'staff'
+        
+        # Make sure the username doesn't already exist to prevent crashes
+        if new_username and new_password and not User.objects.filter(username=new_username).exists():
+            # Create the user securely
+            user = User.objects.create_user(username=new_username, password=new_password)
+            
+            # If they selected Admin, give them superuser powers
+            if role == 'admin':
+                user.is_superuser = True
+                user.is_staff = True
+                user.save()
+                
+    return redirect('settings')
+@login_required
+def delete_user(request, user_id):
+    user_to_delete = get_object_or_404(User, id=user_id)
+    
+    # SECURITY: Make sure they aren't trying to delete themselves!
+    if request.method == 'POST' and user_to_delete != request.user:
+        user_to_delete.delete()
+        
+    return redirect('settings')
+
+@login_required
+def admin_unlock(request):
+    if request.method == 'POST':
+        admin_user = request.POST.get('admin_username')
+        admin_pass = request.POST.get('admin_password')
+        next_url = request.POST.get('next_url', 'dashboard') # Where they wanted to go
+        
+        # Check if the credentials match a real admin
+        user = authenticate(request, username=admin_user, password=admin_pass)
+        if user is not None and user.is_superuser:
+            # UNLOCK THE SYSTEM!
+            request.session['admin_unlocked'] = True
+            return redirect(next_url)
+            
+    # If they type the wrong password, just send them back to the dashboard
+    return redirect('dashboard')

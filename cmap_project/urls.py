@@ -16,6 +16,8 @@ urlpatterns = [
     path('document/<int:document_id>/edit/', views.edit_document, name='edit_document'),
     path('history/', views.history_log, name='history_log'),
     path('settings/', views.settings_page, name='settings'),
+    path('add_user/', views.add_user, name='add_user'),
+    path('delete_user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('settings/category/add/', views.add_category, name='add_category'),
     path('settings/subcategory/add/', views.add_subcategory, name='add_subcategory'),
     path('settings/category/<int:category_id>/edit/', views.edit_category, name='edit_category'),
@@ -25,4 +27,5 @@ urlpatterns = [
     path('settings/subcategory/<int:subcategory_id>/fields/', views.manage_fields, name='manage_fields'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('logout/', views.custom_logout, name='custom_logout'),
+    path('admin_unlock/', views.admin_unlock, name='admin_unlock'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

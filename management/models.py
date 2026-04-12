@@ -17,6 +17,8 @@ class Company(models.Model):
     # NEW: Automatically records exactly when the company profile was created
     created_date = models.DateTimeField(auto_now_add=True, null=True)
 
+    auto_logout_minutes = models.IntegerField(default=30)
+
     def __str__(self):
         return self.name
 

@@ -11,12 +11,14 @@
             --bg-color: #f4f5f7;
             --text-dark: #222;
         }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; transition: 0.3s; }
+        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); transition: 0.3s; }
         .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
         .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
+        .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px 50px; }
         
         .header-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); display: inline-block; margin-bottom: 30px; }
         .back-btn { background: white; color: var(--text-dark); padding: 10px 20px; border-radius: 10px; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.2s; margin-bottom: 20px; display: inline-block; width: fit-content; }
@@ -31,25 +33,41 @@
         .form-group input[type="text"], .form-group select { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit;}
         .submit-btn { background: var(--primary-grad); color: white; padding: 12px; border: none; border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
         
-        /* Field List Styles */
         .field-list { list-style: none; padding: 0; margin: 0; }
         .field-item { background: #f9f9f9; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #7597de; }
         .field-name { font-weight: bold; font-size: 16px; color: #333; }
         .field-meta { font-size: 12px; color: #888; background: #eee; padding: 3px 8px; border-radius: 10px; margin-left: 10px; }
         .field-req { font-size: 12px; color: #c94b4b; font-weight: bold; margin-left: 10px; }
         .del-btn { background: #ffebee; color: #c94b4b; border: 1px solid #ffcdd2; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; }
+        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2 style="text-align:center;">C-MAP</h2>
+        <h2 style="text-align:center; margin-bottom: 10px; letter-spacing: 2px;">C-MAP</h2>
         <ul class="sidebar-menu">
             <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
-            <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
+            
+            {% if request.user.is_superuser or request.session.admin_unlocked %}
+                <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
+            {% else %}
+                <a href="#" onclick="openUnlockModal('{% url 'company_profile' %}')" style="text-decoration: none; color: white;"><li>Company <span style="float:right; opacity:0.5;">🔒</span></li></a>
+            {% endif %}
+            
             <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
-            <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
-            <a href="{% url 'custom_logout' %}" style="text-decoration: none; color: white;"><li>Logout</li></a>
+            
+            {% if request.user.is_superuser or request.session.admin_unlocked %}
+                <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
+            {% else %}
+                <a href="#" onclick="openUnlockModal('{% url 'settings' %}')" style="text-decoration: none; color: white;"><li>Settings <span style="float:right; opacity:0.5;">🔒</span></li></a>
+            {% endif %}
+            
+            <a href="#" onclick="openModal('logoutModal')" style="text-decoration: none; color: white;"><li>Logout</li></a>
         </ul>
+        <div class="sidebar-footer"><p style="margin:0; font-weight:bold;">Powered by C-MAP Core</p></div>
     </div>
 
     <div class="main-content">
@@ -124,5 +142,20 @@
             </div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="logoutModal"><div class="modal-content" style="width: 350px; text-align: center;"><h2 style="color: #c94b4b; margin-top:0;">Confirm Logout</h2><p>Are you sure you want to securely exit the system?</p><a href="{% url 'custom_logout' %}" style="background: #c94b4b; color: white; padding: 15px; border-radius: 10px; font-weight: bold; display: block; text-decoration: none; margin-top: 20px;">Yes, Logout</a><button class="submit-btn" style="background: #eee; color: #333; margin-top: 10px;" onclick="closeModal('logoutModal')">Cancel</button></div></div>
+    <div class="modal-overlay" id="unlockModal"><div class="modal-content" style="width: 350px;"><span class="close-modal" onclick="closeModal('unlockModal')">&times;</span><h2 style="margin-top: 0; color: #4b134f;">🔒 Admin Override</h2><p style="font-size: 13px; color: #666;">Enter administrator credentials to unlock this feature for the current session.</p><form method="POST" action="{% url 'admin_unlock' %}">{% csrf_token %}<input type="hidden" name="next_url" id="nextUrlInput"><div class="form-group"><input type="text" name="admin_username" required placeholder="Admin Username"></div><div class="form-group"><input type="password" name="admin_password" required placeholder="Admin Password"></div><button type="submit" class="submit-btn">Unlock Feature</button></form></div></div>
+
+    <script>
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function openUnlockModal(targetUrl) { document.getElementById('nextUrlInput').value = targetUrl; openModal('unlockModal'); }
+        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal-overlay')) { event.target.style.display = 'none'; } });
+
+        let inactivityTimer;
+        const timeoutMilliseconds = 30 * 60 * 1000; 
+        function resetTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(function() { window.location.href = "{% url 'custom_logout' %}"; }, timeoutMilliseconds); }
+        window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer; document.onscroll = resetTimer;
+    </script>
 </body>
 </html>

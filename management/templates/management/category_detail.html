@@ -6,41 +6,38 @@
     <title>{{ category.name }} - C-MAP</title>
     <style>
         :root {
-            --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b);
+            --primary-grad: linear-gradient(135deg, #6b213b, #9c304d);
             --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de);
-            --bg-color: #f4f5f7;
+            --bg-color: #eef1f5; 
             --text-dark: #222;
         }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); z-index: 10; transition: 0.3s; }
         .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
         .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
         .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px 50px; }
         
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
-        
-        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
         .header-left { display: flex; gap: 20px; align-items: center; }
         
         .back-btn { background: white; color: var(--text-dark); padding: 15px 25px; border-radius: 15px; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.2s; }
         .back-btn:hover { background: #e0e0e0; }
         
-        .category-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        .category-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); margin: 0; }
         
-        .company-logo-container { width: 80px; height: 80px; border-radius: 50%; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; overflow: hidden; border: 3px solid transparent; background-image: linear-gradient(white, white), var(--primary-grad); background-origin: border-box; background-clip: content-box, border-box; }
-        .company-logo-container img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; margin-bottom: auto; margin-top: 20px; }
+        .category-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: auto; margin-top: 10px; }
         .card-link { text-decoration: none; display: block; }
-        .category-card { background: white; padding: 40px 20px; border-radius: 20px; text-align: center; font-size: 18px; font-weight: bold; color: var(--text-dark); box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; text-transform: uppercase; height: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; }
-        .category-card:hover { transform: translateY(-5px); border-bottom: 4px solid #4b134f; }
-        .add-card { font-size: 24px; color: #888; background: rgba(255,255,255,0.5); border: 2px dashed #ccc; }
-        .add-card:hover { background: white; border: 2px dashed #4b134f; color: #4b134f; }
-        
-        .page-footer { text-align: center; color: #999; font-size: 12px; padding-top: 40px; padding-bottom: 10px; }
+        .category-card { background: white; width: 220px; padding: 40px 20px; border-radius: 15px; text-align: center; font-size: 15px; font-weight: 800; color: var(--text-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; text-transform: uppercase; height: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; letter-spacing: 1px;}
+        .category-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); border-bottom: 4px solid #6b213b; }
+        .add-card { font-size: 18px; color: #999; background: transparent; border: 2px dashed #ccc; box-shadow: none;}
+        .add-card:hover { background: white; border: 2px dashed #9c304d; color: #9c304d; }
 
-        /* Modal Styles added here too */
+        .page-footer { text-align: center; color: #aaa; font-size: 12px; padding-top: 40px; padding-bottom: 10px; }
+
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; }
         .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
@@ -52,13 +49,25 @@
 </head>
 <body>
     <div class="sidebar">
-        <h2 style="text-align:center;">C-MAP</h2>
+        <h2 style="text-align:center; margin-bottom: 10px; letter-spacing: 2px;">C-MAP</h2>
         <ul class="sidebar-menu">
             <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
-            <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
+            
+            {% if request.user.is_superuser or request.session.admin_unlocked %}
+                <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
+            {% else %}
+                <a href="#" onclick="openUnlockModal('{% url 'company_profile' %}')" style="text-decoration: none; color: white;"><li>Company <span style="float:right; opacity:0.5;">🔒</span></li></a>
+            {% endif %}
+            
             <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
-            <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
-            <a href="{% url 'custom_logout' %}" style="text-decoration: none; color: white;"><li>Logout</li></a>
+            
+            {% if request.user.is_superuser or request.session.admin_unlocked %}
+                <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
+            {% else %}
+                <a href="#" onclick="openUnlockModal('{% url 'settings' %}')" style="text-decoration: none; color: white;"><li>Settings <span style="float:right; opacity:0.5;">🔒</span></li></a>
+            {% endif %}
+            
+            <a href="#" onclick="openModal('logoutModal')" style="text-decoration: none; color: white;"><li>Logout</li></a>
         </ul>
         <div class="sidebar-footer">
             <p style="margin:0; font-weight:bold;">Powered by C-MAP Core</p>
@@ -70,16 +79,9 @@
         <div class="top-header">
             <div class="header-left">
                 <a href="{% url 'dashboard' %}" class="back-btn">← Back</a>
-                <div class="category-title">{{ category.name }}</div>
+                <h1 class="category-title">{{ category.name }}</h1>
             </div>
-            <div class="company-logo-container">
-                {% if company.logo %}
-                    <img src="{{ company.logo.url }}" alt="Company Logo">
-                {% else %}
-                    <div style="font-weight: bold; color: #888; font-size: 12px;">LOGO</div>
-                {% endif %}
             </div>
-        </div>
 
         <h3 style="color: #555; margin-top: 10px;">Sub-Folders</h3>
 
@@ -94,7 +96,9 @@
                 <p style="color: #888; grid-column: 1 / -1;">No sub-categories created yet.</p>
             {% endfor %}
             
-            <div class="category-card add-card" onclick="openModal('addSubCategoryModal')">ADD +</div>
+            {% if request.user.is_superuser or request.session.admin_unlocked %}
+                <div class="category-card add-card" onclick="openModal('addSubCategoryModal')">ADD +</div>
+            {% endif %}
         </div>
 
         <div class="page-footer">
@@ -105,7 +109,7 @@
     <div class="modal-overlay" id="addSubCategoryModal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('addSubCategoryModal')">&times;</span>
-            <h2 style="margin-top: 0; color: #4b134f;">New Sub-Folder</h2>
+            <h2 style="margin-top: 0; color: #6b213b;">New Sub-Folder</h2>
             <p style="font-size: 13px; color: #666; margin-top: -10px;">Adding inside: <strong>{{ category.name }}</strong></p>
             
             <form method="POST" action="{% url 'add_subcategory' %}">
@@ -120,12 +124,19 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="logoutModal"><div class="modal-content" style="width: 350px; text-align: center;"><h2 style="color: #c94b4b; margin-top:0;">Confirm Logout</h2><p>Are you sure you want to securely exit the system?</p><a href="{% url 'custom_logout' %}" style="background: #c94b4b; color: white; padding: 15px; border-radius: 10px; font-weight: bold; display: block; text-decoration: none; margin-top: 20px;">Yes, Logout</a><button class="submit-btn" style="background: #eee; color: #333; margin-top: 10px;" onclick="closeModal('logoutModal')">Cancel</button></div></div>
+    <div class="modal-overlay" id="unlockModal"><div class="modal-content" style="width: 350px;"><span class="close-modal" onclick="closeModal('unlockModal')">&times;</span><h2 style="margin-top: 0; color: #6b213b;">🔒 Admin Override</h2><p style="font-size: 13px; color: #666;">Enter administrator credentials to unlock this feature for the current session.</p><form method="POST" action="{% url 'admin_unlock' %}">{% csrf_token %}<input type="hidden" name="next_url" id="nextUrlInput"><div class="form-group"><input type="text" name="admin_username" required placeholder="Admin Username"></div><div class="form-group"><input type="password" name="admin_password" required placeholder="Admin Password"></div><button type="submit" class="submit-btn">Unlock Feature</button></form></div></div>
+
     <script>
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal-overlay')) { event.target.style.display = 'none'; }
-        });
+        function openUnlockModal(targetUrl) { document.getElementById('nextUrlInput').value = targetUrl; openModal('unlockModal'); }
+        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal-overlay')) { event.target.style.display = 'none'; } });
+
+        let inactivityTimer;
+        const timeoutMilliseconds = 30 * 60 * 1000; 
+        function resetTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(function() { window.location.href = "{% url 'custom_logout' %}"; }, timeoutMilliseconds); }
+        window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer; document.onscroll = resetTimer;
     </script>
 </body>
 </html>
