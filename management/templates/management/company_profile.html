@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Profile - C-MAP</title>
+    <style>
+        :root { --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b); --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de); --bg-color: #f4f5f7; --text-dark: #222; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
+        .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
+        
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .header-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        
+        /* THE NEW USER PROFILE HEADER */
+        .user-profile-header { display: flex; align-items: center; gap: 15px; background: white; padding: 10px 20px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .user-info { text-align: right; }
+        .user-name { font-weight: bold; color: var(--text-dark); font-size: 15px; text-transform: capitalize;}
+        .user-role { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px;}
+        .user-avatar { width: 45px; height: 45px; border-radius: 50%; background: var(--primary-grad); color: white; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; box-shadow: 0 5px 10px rgba(201, 75, 75, 0.3); }
+
+        /* COMPANY PROFILE LAYOUT */
+        .profile-container { background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; width: 100%; position: relative;}
+        .edit-btn { position: absolute; top: 30px; right: 30px; background: #f4f5f7; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; color: #4b134f; transition: 0.2s;}
+        .edit-btn:hover { background: #e0e0e0; }
+
+        .logo-display { width: 120px; height: 120px; border-radius: 20px; object-fit: cover; border: 3px solid #eee; margin-bottom: 20px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+        .info-box { background: #fdfdfd; padding: 15px 20px; border-radius: 12px; border-left: 4px solid #7597de; }
+        .info-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-value { font-size: 16px; font-weight: bold; color: #333; }
+
+        /* FORM STYLES (Hidden by default) */
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
+        .form-group input { padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; }
+        .submit-btn { background: var(--primary-grad); color: white; padding: 15px; border: none; border-radius: 10px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="text-align:center;">C-MAP</h2>
+        <ul class="sidebar-menu">
+            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
+            <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li style="background: rgba(255,255,255,0.2);">Company</li></a>
+            <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
+            <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
+            <a href="{% url 'custom_logout' %}" style="text-decoration: none; color: white;"><li>Logout</li></a>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div class="header-title">Company Profile</div>
+            
+            <div class="user-profile-header">
+                <div class="user-info">
+                    <div class="user-name">{{ request.user.username }}</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+                <div class="user-avatar">{{ request.user.username|make_list|first|upper }}</div>
+            </div>
+        </div>
+
+        <div class="profile-container">
+            <div id="readOnlyView">
+                <button class="edit-btn" onclick="toggleEditMode()">✏️ Edit Details</button>
+                
+                <div style="text-align: center;">
+                    {% if company.logo %}
+                        <img src="{{ company.logo.url }}" class="logo-display">
+                    {% else %}
+                        <div class="logo-display" style="display:inline-flex; align-items:center; justify-content:center; background:#eee; color:#888; font-weight:bold;">NO LOGO</div>
+                    {% endif %}
+                    <h1 style="margin: 0; color: #222;">{{ company.name|default:"Company Name Pending" }}</h1>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-box"><div class="info-label">Contact Number</div><div class="info-value">{{ company.contact_number|default:"-" }}</div></div>
+                    <div class="info-box"><div class="info-label">Email Address</div><div class="info-value">{{ company.email_address|default:"-" }}</div></div>
+                    <div class="info-box"><div class="info-label">Location (District, Country)</div><div class="info-value">{{ company.district|default:"-" }}, {{ company.country|default:"-" }}</div></div>
+                    <div class="info-box"><div class="info-label">Profile Created</div><div class="info-value">{{ company.created_date|date:"F d, Y" }}</div></div>
+                </div>
+
+                <h3 style="margin-top: 40px; color: #4b134f; border-bottom: 2px solid #eee; padding-bottom: 10px;">Official Licenses</h3>
+                <div class="info-grid" style="margin-top: 20px;">
+                    <div class="info-box" style="border-left-color: #c94b4b;"><div class="info-label">Tax Number</div><div class="info-value">{{ company.tax_number|default:"-" }}</div></div>
+                    <div class="info-box" style="border-left-color: #c94b4b;"><div class="info-label">CR Number</div><div class="info-value">{{ company.cr_number|default:"-" }}</div></div>
+                    <div class="info-box" style="border-left-color: #c94b4b; grid-column: 1 / -1;"><div class="info-label">License Number</div><div class="info-value">{{ company.license_number|default:"-" }}</div></div>
+                </div>
+            </div>
+
+            <div id="editFormView" style="display: none;">
+                <button class="edit-btn" onclick="toggleEditMode()" style="background: #ffebee; color: #c94b4b;">❌ Cancel Edit</button>
+                <h2 style="margin-top: 0; color: #4b134f;">Update Company Details</h2>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group"><label>Upload New Logo</label><input type="file" name="company_logo"></div>
+                    <div class="form-group"><label>Company Name</label><input type="text" name="company_name" value="{{ company.name }}" required></div>
+                    
+                    <div style="display: flex; gap:15px;">
+                        <div class="form-group" style="flex:1;"><label>Contact Number</label><input type="text" name="contact_number" value="{{ company.contact_number|default:'' }}"></div>
+                        <div class="form-group" style="flex:1;"><label>Email Address</label><input type="email" name="email_address" value="{{ company.email_address|default:'' }}"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap:15px;">
+                        <div class="form-group" style="flex:1;"><label>District</label><input type="text" name="district" value="{{ company.district|default:'' }}"></div>
+                        <div class="form-group" style="flex:1;"><label>Country</label><input type="text" name="country" value="{{ company.country|default:'' }}"></div>
+                    </div>
+
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 15px; margin-top: 10px; border: 1px solid #eee;">
+                        <h4 style="margin-top: 0; color: #c94b4b;">Official Documents</h4>
+                        <div style="display: flex; gap:15px;">
+                            <div class="form-group" style="flex:1;"><label>Tax Number</label><input type="text" name="tax_number" value="{{ company.tax_number|default:'' }}"></div>
+                            <div class="form-group" style="flex:1;"><label>CR Number</label><input type="text" name="cr_number" value="{{ company.cr_number|default:'' }}"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;"><label>License Number</label><input type="text" name="license_number" value="{{ company.license_number|default:'' }}"></div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">💾 Save Changes</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function toggleEditMode() {
+            const readView = document.getElementById('readOnlyView');
+            const editView = document.getElementById('editFormView');
+            if (readView.style.display === 'none') {
+                readView.style.display = 'block';
+                editView.style.display = 'none';
+            } else {
+                readView.style.display = 'none';
+                editView.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

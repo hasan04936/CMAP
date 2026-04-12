@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - C-MAP Enterprise</title>
+    <style>
+        :root { --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b); }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; height: 100vh; background-color: #f4f5f7; align-items: center; justify-content: center; }
+        
+        .login-box { display: flex; width: 900px; height: 500px; background: white; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); overflow: hidden; }
+        
+        .brand-side { flex: 1; background: var(--primary-grad); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; }
+        .brand-side h1 { font-size: 40px; font-weight: 900; margin: 0; letter-spacing: 2px;}
+        .brand-side p { font-size: 16px; opacity: 0.8; margin-top: 10px; line-height: 1.6; }
+        
+        .form-side { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
+        .form-side h2 { color: #4b134f; margin-top: 0; font-size: 28px; margin-bottom: 30px;}
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
+        .form-group input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: 0.3s; font-family: inherit;}
+        .form-group input:focus { border-color: #c94b4b; outline: none; }
+        
+        .submit-btn { background: var(--primary-grad); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; margin-top: 10px; box-shadow: 0 10px 20px rgba(201, 75, 75, 0.3);}
+        .submit-btn:hover { transform: translateY(-3px); }
+        
+        .error-msg { color: #c94b4b; font-size: 13px; font-weight: bold; margin-bottom: 20px; text-align: center; background: #ffebee; padding: 10px; border-radius: 8px;}
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <div class="brand-side">
+            <h1>C-MAP</h1>
+            <p>Corporate Management<br>& Administration Portal</p>
+            <div style="margin-top: 50px; font-size: 12px; opacity: 0.5;">Secure Enterprise Environment</div>
+        </div>
+        
+        <div class="form-side">
+            <h2>Welcome Back</h2>
+            
+            {% if form.errors %}
+                <div class="error-msg">Incorrect Username or Password. Please try again.</div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Admin Username</label>
+                    <input type="text" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>Secure Password</label>
+                    <input type="password" name="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="submit-btn">Access System</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

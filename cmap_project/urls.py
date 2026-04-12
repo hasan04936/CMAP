@@ -3,10 +3,13 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from management import views
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.dashboard, name='dashboard'),
+    path('search/', views.global_search, name='global_search'),
+    path('company/', views.company_profile, name='company_profile'),
     path('category/<int:category_id>/', views.category_detail, name='category_detail'),
     path('subcategory/<int:subcategory_id>/', views.subcategory_detail, name='subcategory_detail'),
     path('document/<int:document_id>/delete/', views.delete_document, name='delete_document'),
@@ -20,4 +23,6 @@ urlpatterns = [
     path('settings/subcategory/<int:subcategory_id>/edit/', views.edit_subcategory, name='edit_subcategory'),
     path('settings/subcategory/<int:subcategory_id>/delete/', views.delete_subcategory, name='delete_subcategory'),
     path('settings/subcategory/<int:subcategory_id>/fields/', views.manage_fields, name='manage_fields'),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('logout/', views.custom_logout, name='custom_logout'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - C-MAP</title>
+    <style>
+        :root { --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b); --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de); --bg-color: #f4f5f7; --text-dark: #222; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; z-index: 10; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
+        .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
+        
+        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .back-btn { background: white; color: var(--text-dark); padding: 15px 25px; border-radius: 15px; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.2s; }
+        .back-btn:hover { background: #e0e0e0; }
+        .category-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        
+        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; margin-top: 30px;}
+        .doc-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-left: 6px solid #4b134f; transition: transform 0.2s; }
+        .doc-card:hover { transform: translateY(-5px); }
+        .card-header-dynamic { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #f4f5f7; }
+        .card-body-dynamic { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        
+        .action-btn { padding: 8px 15px; border-radius: 8px; border: 1px solid #ddd; background: #fdfdfd; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; text-align: center; color: #333; transition: 0.2s; margin-top: 10px;}
+        .action-btn:hover { background: #eee; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="text-align:center;">C-MAP</h2>
+        <ul class="sidebar-menu">
+            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
+            <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
+            <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
+            <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="top-header">
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <a href="{% url 'dashboard' %}" class="back-btn">← Dashboard</a>
+                <div class="category-title">Search Results</div>
+            </div>
+        </div>
+
+        <h3 style="color: #555;">Found {{ results|length }} result(s) for "<span style="color:#c94b4b;">{{ query }}</span>"</h3>
+
+        <div class="doc-grid">
+            {% for doc in results %}
+                <div class="doc-card">
+                    <div style="font-size: 10px; color: white; background: #2b1055; padding: 5px 10px; border-radius: 10px; margin-bottom: 15px; width: fit-content;">
+                        📁 {{ doc.sub_category.category.name }} > {{ doc.sub_category.name }}
+                    </div>
+
+                    <div class="card-header-dynamic">
+                        {% for val in doc.custom_values.all %}
+                            {% if val.custom_field.show_on_card and forloop.first %}
+                                <div>
+                                    <div style="font-size: 11px; color: #888; text-transform: uppercase;">{{ val.custom_field.field_name }}</div>
+                                    <div style="font-size: 20px; font-weight: 900; color: #2b1055; margin-top: 2px;">{{ val.value|default:"-" }}</div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="card-body-dynamic">
+                        {% for val in doc.custom_values.all %}
+                            {% if val.custom_field.show_on_card and not forloop.first %}
+                                <div>
+                                    <div style="font-size: 11px; color: #999; text-transform: uppercase;">{{ val.custom_field.field_name }}</div>
+                                    <div style="font-size: 14px; font-weight: bold; margin-top: 3px; {% if 'expire' in val.custom_field.field_name|lower %}color: #c94b4b;{% else %}color: #333;{% endif %}">
+                                        {% if val.custom_field.field_type == 'file' and val.file_value %}📎 File{% else %}{{ val.value|default:"-" }}{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <button class="action-btn" onclick="window.location.href='{% url 'subcategory_detail' doc.sub_category.id %}'">Go to Folder to View</button>
+                </div>
+            {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: white; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                    <h2 style="color: #888;">No results found.</h2>
+                    <p style="color: #aaa;">Try searching for a different name, ID number, or date.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

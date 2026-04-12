@@ -2,21 +2,29 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from datetime import timedelta
 from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.contrib.auth.models import User
+from django.db.models import Q
 
+@login_required
 def dashboard(request):
     company = Company.objects.first()
     categories = Category.objects.all()
 
-    # 1. Calculate "Updated Today"
+    # 1. SMART BADGE: Count documents uploaded today
     today = timezone.now().date()
-    updated_today_count = Document.objects.filter(updated_date__date=today).count()
+    updated_today_count = Document.objects.filter(uploaded_date__date=today).count()
 
-    # 2. Calculate "Expire Soon" (Expiring within the next 30 days)
-    thirty_days_from_now = today + timedelta(days=30)
+    # 2. SMART BADGE: Count Dynamic Expiry Dates within 30 days!
+    today_str = today.strftime('%Y-%m-%d')
+    thirty_days_str = (today + timedelta(days=30)).strftime('%Y-%m-%d')
+    
     expire_soon_count = Document.objects.filter(
-        expire_date__lte=thirty_days_from_now,
-        expire_date__gte=today
-    ).count()
+        custom_values__custom_field__field_type='date',
+        custom_values__value__lte=thirty_days_str,
+        custom_values__value__gte=today_str
+    ).distinct().count()
     
     context = {
         'company': company,
@@ -26,7 +34,7 @@ def dashboard(request):
     }
     return render(request, 'management/dashboard.html', context)
 
-# ---> THIS WAS THE MISSING FUNCTION! <---
+@login_required
 def category_detail(request, category_id):
     company = Company.objects.first()
     category = get_object_or_404(Category, id=category_id)
@@ -39,6 +47,7 @@ def category_detail(request, category_id):
     }
     return render(request, 'management/category_detail.html', context)
 
+@login_required
 def subcategory_detail(request, subcategory_id):
     company = Company.objects.first()
     subcategory = get_object_or_404(SubCategory, id=subcategory_id)
@@ -69,7 +78,6 @@ def subcategory_detail(request, subcategory_id):
                     CustomFieldValue.objects.create(document=doc, custom_field=field, value=text_val)
                     
         return redirect('subcategory_detail', subcategory_id=subcategory.id)
-    # ... rest of the function remains the same
 
     # 2. GET: Display the Page
     documents = Document.objects.filter(sub_category=subcategory).order_by('-id')
@@ -77,20 +85,11 @@ def subcategory_detail(request, subcategory_id):
         'company': company,
         'subcategory': subcategory,
         'documents': documents,
-        # NEW: Send the custom fields to the HTML page!
         'custom_fields': subcategory.custom_fields.all(), 
     }
     return render(request, 'management/subcategory_detail.html', context)
 
-    # 2. GET: Display the Page
-    documents = Document.objects.filter(sub_category=subcategory).order_by('-id')
-    context = {
-        'company': company,
-        'subcategory': subcategory,
-        'documents': documents,
-    }
-    return render(request, 'management/subcategory_detail.html', context)
-
+@login_required
 def delete_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
     subcategory_id = document.sub_category.id
@@ -100,13 +99,12 @@ def delete_document(request, document_id):
         
     return redirect('subcategory_detail', subcategory_id=subcategory_id)
 
+@login_required
 def edit_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
     subcategory = document.sub_category
     
     if request.method == 'POST':
-    
-        
         # Loop through all dynamic fields and update their specific values
         for field in subcategory.custom_fields.all():
             input_name = f"custom_{field.id}"
@@ -126,6 +124,7 @@ def edit_document(request, document_id):
         document.save()
     return redirect('subcategory_detail', subcategory_id=subcategory.id)
 
+@login_required
 def history_log(request):
     company = Company.objects.first()
     # Grab all documents, ordered by the most recently updated first
@@ -137,44 +136,27 @@ def history_log(request):
     }
     return render(request, 'management/history.html', context)
 
+@login_required
 def settings_page(request):
-    company = Company.objects.first()
     categories = Category.objects.all()
-
-    # If the user clicks "Save Company Details"
-    if request.method == 'POST' and 'update_company' in request.POST:
-        company.name = request.POST.get('company_name')
-        company.contact_number = request.POST.get('contact_number')
-        company.email_address = request.POST.get('email_address')
-        company.country = request.POST.get('country')
-        company.district = request.POST.get('district')
-        
-        # Save the new official numbers
-        company.tax_number = request.POST.get('tax_number')
-        company.cr_number = request.POST.get('cr_number')
-        company.license_number = request.POST.get('license_number')
-        
-        # Check for a new logo upload
-        if request.FILES.get('company_logo'):
-            company.logo = request.FILES.get('company_logo')
-            
-        company.save() # Lock in the changes
-        return redirect('settings')
-
+    # Grab all users registered in the system
+    users = User.objects.all()
+    
     context = {
-        'company': company,
         'categories': categories,
+        'users': users,
     }
     return render(request, 'management/settings.html', context)
 
+@login_required
 def add_category(request):
     if request.method == 'POST':
         name = request.POST.get('category_name')
         if name:
             Category.objects.create(name=name)
-    # This magic line sends them back to the exact page they clicked the button from!
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 
+@login_required
 def add_subcategory(request):
     if request.method == 'POST':
         name = request.POST.get('subcategory_name')
@@ -184,6 +166,7 @@ def add_subcategory(request):
             SubCategory.objects.create(name=name, category=category)
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 
+@login_required
 def edit_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
@@ -193,12 +176,14 @@ def edit_category(request, category_id):
             category.save()
     return redirect('settings')
 
+@login_required
 def delete_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
         category.delete()
     return redirect('settings')
 
+@login_required
 def edit_subcategory(request, subcategory_id):
     subcategory = get_object_or_404(SubCategory, id=subcategory_id)
     if request.method == 'POST':
@@ -208,24 +193,25 @@ def edit_subcategory(request, subcategory_id):
             subcategory.save()
     return redirect('settings')
 
+@login_required
 def delete_subcategory(request, subcategory_id):
     subcategory = get_object_or_404(SubCategory, id=subcategory_id)
     if request.method == 'POST':
         subcategory.delete()
     return redirect('settings')
 
+@login_required
 def manage_fields(request, subcategory_id):
     # Get the specific sub-folder we are building fields for
     subcategory = get_object_or_404(SubCategory, id=subcategory_id)
     
     if request.method == 'POST':
         # Check if we are ADDING a field
-        # Check if we are ADDING a field
         if 'add_field' in request.POST:
             field_name = request.POST.get('field_name')
             field_type = request.POST.get('field_type')
             is_required = request.POST.get('is_required') == 'on' 
-            show_on_card = request.POST.get('show_on_card') == 'on' # NEW CHECKBOX
+            show_on_card = request.POST.get('show_on_card') == 'on' 
             
             if field_name:
                 CustomField.objects.create(
@@ -233,7 +219,7 @@ def manage_fields(request, subcategory_id):
                     field_name=field_name,
                     field_type=field_type,
                     is_required=is_required,
-                    show_on_card=show_on_card # SAVES IT!
+                    show_on_card=show_on_card 
                 )
                 
         # Check if we are DELETING a field
@@ -245,7 +231,52 @@ def manage_fields(request, subcategory_id):
 
     context = {
         'subcategory': subcategory,
-        # Get all fields already created for this folder
         'fields': subcategory.custom_fields.all() 
     }
     return render(request, 'management/manage_fields.html', context)
+
+# NEW SECURE LOGOUT FUNCTION
+def custom_logout(request):
+    logout(request)
+    return redirect('login')
+
+@login_required
+def company_profile(request):
+    # Get or create the company profile so it never crashes
+    company, created = Company.objects.get_or_create(id=1)
+
+    if request.method == 'POST':
+        company.name = request.POST.get('company_name')
+        company.contact_number = request.POST.get('contact_number')
+        company.email_address = request.POST.get('email_address')
+        company.country = request.POST.get('country')
+        company.district = request.POST.get('district')
+        company.tax_number = request.POST.get('tax_number')
+        company.cr_number = request.POST.get('cr_number')
+        company.license_number = request.POST.get('license_number')
+        
+        if request.FILES.get('company_logo'):
+            company.logo = request.FILES.get('company_logo')
+            
+        company.save()
+        return redirect('company_profile')
+
+    return render(request, 'management/company_profile.html', {'company': company})
+
+@login_required
+def global_search(request):
+    query = request.GET.get('q', '')
+    results = []
+    
+    if query:
+        # MAGIC SEARCH: Looks at the Title OR ANY custom field answer!
+        results = Document.objects.filter(
+            Q(title__icontains=query) |
+            Q(custom_values__value__icontains=query)
+        ).distinct().order_by('-id')
+        
+    context = {
+        'query': query,
+        'results': results,
+    }
+    return render(request, 'management/search_results.html', context)
