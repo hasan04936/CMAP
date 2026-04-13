@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Results - C-MAP</title>
+    <title>{{ title }} - C-MAP</title>
     <style>
         :root {
             --primary-color: #6b213b; /* Fallback */
@@ -96,11 +96,11 @@
         <div class="top-header">
             <div class="header-left-cluster">
                 <a href="{% url 'dashboard' %}" class="back-btn">← Dashboard</a>
-                <div class="page-title-box">Search Results</div>
+                <div class="page-title-box">{{ title }}</div>
             </div>
         </div>
 
-        <h3 style="color: #444; font-size: 15px; margin-top: 0;">Found {{ results|length }} result(s) for "<span style="color:var(--primary-color);">{{ query }}</span>"</h3>
+        <h3 style="color: #444; font-size: 15px; margin-top: 0;">Found {{ results|length }} document(s)</h3>
 
         <div class="doc-grid">
             {% for doc in results %}
@@ -137,8 +137,8 @@
                 </div>
             {% empty %}
                 <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: white; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-                    <h2 style="color: #666; font-size: 20px; margin-bottom: 10px;">No results found.</h2>
-                    <p style="color: #aaa; font-size: 14px; margin: 0;">Try searching for a different name, ID number, or date.</p>
+                    <h2 style="color: #666; font-size: 20px; margin-bottom: 10px;">No documents found.</h2>
+                    <p style="color: #aaa; font-size: 14px; margin: 0;">There are no items currently matching this filter.</p>
                 </div>
             {% endfor %}
         </div>

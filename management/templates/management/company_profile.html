@@ -48,6 +48,19 @@
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; }
         .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
     </style>
+
+    <script>
+        (function() {
+            const theme = "{{ request.user.profile.theme|default:'default' }}";
+            const root = document.documentElement;
+            if (theme === 'midnight') { root.style.setProperty('--primary-color', '#1e293b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #1e293b, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #1e293b)'); } 
+            else if (theme === 'emerald') { root.style.setProperty('--primary-color', '#10b981'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #064e3b, #047857)'); } 
+            else if (theme === 'ocean') { root.style.setProperty('--primary-color', '#0ea5e9'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0c4a6e, #0369a1)'); } 
+            else if (theme === 'amethyst') { root.style.setProperty('--primary-color', '#8b5cf6'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2e1065, #4c1d95)'); } 
+            else if (theme === 'charcoal') { root.style.setProperty('--primary-color', '#0f172a'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #020617, #0f172a)'); } 
+            else { root.style.setProperty('--primary-color', '#8c253e'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8c253e, #b03050)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2b1055, #7597de)'); }
+        })();
+    </script>
 </head>
 <body>
     <div class="sidebar">

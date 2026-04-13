@@ -33,6 +33,9 @@ urlpatterns = [
     path('reset_password/', views.reset_password, name='reset_password'),
     path('change_avatar/', views.change_avatar, name='change_avatar'),
     path('reset_password/', views.reset_password, name='reset_password'),
+    path('save_theme/', views.save_theme, name='save_theme'),
+    path('update_alerts/', views.update_alerts, name='update_alerts'),
+    path('filtered/<str:filter_type>/', views.filtered_documents, name='filtered_documents'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

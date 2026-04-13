@@ -11,28 +11,38 @@ from django.contrib.auth import update_session_auth_hash
 
 @login_required
 def dashboard(request):
-    company = Company.objects.first()
+    company, _ = Company.objects.get_or_create(id=1)
     categories = Category.objects.all()
 
-    # 1. SMART BADGE: Count documents uploaded today
     today = timezone.now().date()
-    updated_today_count = Document.objects.filter(uploaded_date__date=today).count()
-
-    # 2. SMART BADGE: Count Dynamic Expiry Dates within 30 days!
     today_str = today.strftime('%Y-%m-%d')
-    thirty_days_str = (today + timedelta(days=30)).strftime('%Y-%m-%d')
     
+    # 1. RECENT UPDATES (Based on custom timer)
+    recent_date = today - timedelta(days=company.recent_update_days)
+    recent_updates_count = Document.objects.filter(uploaded_date__date__gte=recent_date).count()
+
+    # 2. EXPIRE SOON (Based on custom timer)
+    future_str = (today + timedelta(days=company.expire_alert_days)).strftime('%Y-%m-%d')
     expire_soon_count = Document.objects.filter(
         custom_values__custom_field__field_type='date',
-        custom_values__value__lte=thirty_days_str,
-        custom_values__value__gte=today_str
+        custom_values__value__lte=future_str,
+        custom_values__value__gte=today_str,
+        custom_values__custom_field__field_name__icontains='expire' # Only look at fields with 'expire' in the name!
+    ).distinct().count()
+    
+    # 3. ALREADY EXPIRED
+    expired_count = Document.objects.filter(
+        custom_values__custom_field__field_type='date',
+        custom_values__value__lt=today_str,
+        custom_values__custom_field__field_name__icontains='expire'
     ).distinct().count()
     
     context = {
         'company': company,
         'categories': categories,
-        'updated_today': updated_today_count,
+        'updated_today': recent_updates_count,
         'expire_soon': expire_soon_count,
+        'expired': expired_count,
     }
     return render(request, 'management/dashboard.html', context)
 
@@ -157,11 +167,14 @@ def settings_page(request):
     # ADD THIS TO THE TOP OF settings_page AND company_profile
     if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
         return redirect('dashboard') # Kicks them out if they try to hack the URL!
+    
+    company = Company.objects.first()
     categories = Category.objects.all()
     # Grab all users registered in the system
     users = User.objects.all()
     
     context = {
+        'company': company,
         'categories': categories,
         'users': users,
     }
@@ -464,3 +477,57 @@ def reset_password(request):
             )
             
     return redirect('settings')
+
+@login_required
+def save_theme(request):
+    if request.method == 'POST':
+        theme = request.POST.get('theme', 'default')
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        profile.theme = theme
+        profile.save()
+    return redirect(request.META.get('HTTP_REFERER', 'settings'))
+
+@login_required
+def update_alerts(request):
+    if request.method == 'POST':
+        company, _ = Company.objects.get_or_create(id=1)
+        company.expire_alert_days = request.POST.get('expire_days', 30)
+        company.recent_update_days = request.POST.get('recent_days', 7)
+        company.save()
+        
+        HistoryLog.objects.create(user=request.user, action="Edited", document_name="Tracking Timers", folder_path="Settings")
+    return redirect('settings')
+
+@login_required
+def filtered_documents(request, filter_type):
+    company, _ = Company.objects.get_or_create(id=1)
+    today = timezone.now().date()
+    today_str = today.strftime('%Y-%m-%d')
+    
+    results = []
+    title = ""
+    
+    if filter_type == 'recent':
+        recent_date = today - timedelta(days=company.recent_update_days)
+        results = Document.objects.filter(uploaded_date__date__gte=recent_date).order_by('-uploaded_date')
+        title = f"Recent Updates (Last {company.recent_update_days} Days)"
+        
+    elif filter_type == 'expire_soon':
+        future_str = (today + timedelta(days=company.expire_alert_days)).strftime('%Y-%m-%d')
+        results = Document.objects.filter(
+            custom_values__custom_field__field_type='date',
+            custom_values__value__lte=future_str,
+            custom_values__value__gte=today_str,
+            custom_values__custom_field__field_name__icontains='expire'
+        ).distinct()
+        title = f"Expiring Soon (Next {company.expire_alert_days} Days)"
+        
+    elif filter_type == 'expired':
+        results = Document.objects.filter(
+            custom_values__custom_field__field_type='date',
+            custom_values__value__lt=today_str,
+            custom_values__custom_field__field_name__icontains='expire'
+        ).distinct()
+        title = "Expired Documents"
+
+    return render(request, 'management/filtered_documents.html', {'results': results, 'title': title})

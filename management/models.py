@@ -20,16 +20,19 @@ class Company(models.Model):
 
     auto_logout_minutes = models.IntegerField(default=30)
 
+    expire_alert_days = models.IntegerField(default=30)
+    recent_update_days = models.IntegerField(default=7)
+
     def __str__(self):
         return self.name
     
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    theme = models.CharField(max_length=20, default='default') # <-- NEW: Saves the theme!
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
-
 class Category(models.Model):
     name = models.CharField(max_length=100) # e.g., Employees, Co Documents, Vehicles
     description = models.TextField(blank=True, null=True)
