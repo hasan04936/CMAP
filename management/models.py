@@ -19,6 +19,7 @@ class Company(models.Model):
     created_date = models.DateTimeField(auto_now_add=True, null=True)
 
     auto_logout_minutes = models.IntegerField(default=30)
+    
 
     expire_alert_days = models.IntegerField(default=30)
     recent_update_days = models.IntegerField(default=7)

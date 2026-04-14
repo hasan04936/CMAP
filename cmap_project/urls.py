@@ -36,6 +36,9 @@ urlpatterns = [
     path('save_theme/', views.save_theme, name='save_theme'),
     path('update_alerts/', views.update_alerts, name='update_alerts'),
     path('filtered/<str:filter_type>/', views.filtered_documents, name='filtered_documents'),
+    path('setup/admin/', views.setup_admin, name='setup_admin'),
+    path('setup/company/', views.setup_company, name='setup_company'),
+    path('settings/backup/', views.download_backup, name='download_backup'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

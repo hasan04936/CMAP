@@ -17,7 +17,7 @@
         /* Unified Dashboard Sidebar */
         .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); z-index: 10; transition: 0.3s; }
         .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
-        .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .sidebar-menu li { padding: 15px 20px; margin-bottom: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
         .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
 
@@ -60,6 +60,16 @@
             else if (theme === 'ocean') { root.style.setProperty('--primary-color', '#0ea5e9'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0ea5e9, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0c4a6e, #0369a1)'); } 
             else if (theme === 'amethyst') { root.style.setProperty('--primary-color', '#8b5cf6'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8b5cf6, #a78bfa)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2e1065, #4c1d95)'); } 
             else if (theme === 'charcoal') { root.style.setProperty('--primary-color', '#0f172a'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0f172a, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #020617, #0f172a)'); } 
+            else if (theme === 'sunset') { root.style.setProperty('--primary-color', '#ea580c'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #ea580c, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #7c2d12, #ea580c)'); }
+            else if (theme === 'cyberpunk') { root.style.setProperty('--primary-color', '#d946ef'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #d946ef, #ec4899)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #4a044e, #701a75)'); }
+            else if (theme === 'graphite') { root.style.setProperty('--primary-color', '#475569'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #475569, #64748b)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #334155)'); }
+            else if (theme === 'rosegold') { root.style.setProperty('--primary-color', '#e11d48'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #e11d48, #fb7185)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #881337, #be123c)'); }
+            else if (theme === 'deeproyal') { root.style.setProperty('--primary-color', '#4338ca'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #4338ca, #6366f1)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #1e1b4b, #312e81)'); }
+            else if (theme === 'twilight') { root.style.setProperty('--primary-color', '#7e22ce'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #7e22ce, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #3b0764, #7e22ce)'); }
+            else if (theme === 'crimson') { root.style.setProperty('--primary-color', '#991b1b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #991b1b, #ef4444)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #450a0a, #7f1d1d)'); }
+            else if (theme === 'forest') { root.style.setProperty('--primary-color', '#15803d'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #15803d, #22c55e)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #052e16, #14532d)'); }
+            else if (theme === 'mocha') { root.style.setProperty('--primary-color', '#b45309'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #b45309, #d97706)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #451a03, #78350f)'); }
+            else if (theme === 'glacier') { root.style.setProperty('--primary-color', '#0284c7'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0284c7, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #082f49, #0369a1)'); }
             else { root.style.setProperty('--primary-color', '#8c253e'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8c253e, #b03050)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2b1055, #7597de)'); }
         })();
     </script>

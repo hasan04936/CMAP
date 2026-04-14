@@ -5,36 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - C-MAP Enterprise</title>
     <style>
-        :root { --primary-grad: linear-gradient(135deg, #4b134f, #c94b4b); }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; height: 100vh; background-color: #f4f5f7; align-items: center; justify-content: center; }
+        :root { 
+            --primary-color: #6b213b;
+            --primary-grad: linear-gradient(135deg, #6b213b, #9c304d); 
+        }
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            background-color: #eef1f5; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden;
+        }
         
-        .login-box { display: flex; width: 900px; height: 500px; background: white; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); overflow: hidden; }
+        .login-box { 
+            display: flex; 
+            width: 900px; 
+            height: 520px; 
+            background: white; 
+            border-radius: 30px; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.1); 
+            overflow: hidden; 
+        }
         
-        .brand-side { flex: 1; background: var(--primary-grad); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; }
-        .brand-side h1 { font-size: 40px; font-weight: 900; margin: 0; letter-spacing: 2px;}
-        .brand-side p { font-size: 16px; opacity: 0.8; margin-top: 10px; line-height: 1.6; }
+        .brand-side { 
+            flex: 1; 
+            background: var(--primary-grad); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 40px; 
+            text-align: center; 
+            position: relative;
+        }
+
+        /* Invisible spacer to push the main logo perfectly to the center */
+        .top-spacer { margin-bottom: auto; }
+
+        .brand-side h1 { font-size: 45px; font-weight: 900; margin: 0; letter-spacing: 3px; text-shadow: 0 5px 15px rgba(0,0,0,0.2);}
+        .brand-side p { font-size: 15px; opacity: 0.85; margin-top: 10px; line-height: 1.6; }
         
-        .form-side { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
-        .form-side h2 { color: #4b134f; margin-top: 0; font-size: 28px; margin-bottom: 30px;}
+        /* New container to group the badge and footer at the bottom */
+        .bottom-branding {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .company-badge {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            backdrop-filter: blur(5px);
+        }
+
+        .brand-footer { font-size: 11px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;}
         
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-size: 13px; font-weight: bold; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
-        .form-group input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: 0.3s; font-family: inherit;}
-        .form-group input:focus { border-color: #c94b4b; outline: none; }
+        .form-side { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: center; background: #ffffff;}
         
-        .submit-btn { background: var(--primary-grad); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; margin-top: 10px; box-shadow: 0 10px 20px rgba(201, 75, 75, 0.3);}
-        .submit-btn:hover { transform: translateY(-3px); }
+        /* Centered the Welcome Back text */
+        .form-side h2 { color: var(--primary-color); margin-top: 0; font-size: 28px; margin-bottom: 30px; font-weight: 800; text-align: center;}
         
-        .error-msg { color: #c94b4b; font-size: 13px; font-weight: bold; margin-bottom: 20px; text-align: center; background: #ffebee; padding: 10px; border-radius: 8px;}
+        .form-group { margin-bottom: 22px; }
+        .form-group label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
+        .form-group input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: 0.3s; font-family: inherit; background: #fdfdfd;}
+        
+        .form-group input:focus { border-color: var(--primary-color); outline: none; background: #fff; box-shadow: 0 0 0 4px rgba(107, 33, 59, 0.1);}
+        
+        .submit-btn { background: var(--primary-grad); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; box-shadow: 0 10px 20px rgba(107, 33, 59, 0.2);}
+        .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(107, 33, 59, 0.3); }
+        
+        .error-msg { color: #dc2626; font-size: 13px; font-weight: bold; margin-bottom: 25px; text-align: center; background: #fef2f2; padding: 12px; border-radius: 10px; border: 1px solid #fecaca;}
     </style>
 </head>
 <body>
 
     <div class="login-box">
         <div class="brand-side">
+            <div class="top-spacer"></div>
+            
             <h1>C-MAP</h1>
-            <p>Corporate Management<br>& Administration Portal</p>
-            <div style="margin-top: 50px; font-size: 12px; opacity: 0.5;">Secure Enterprise Environment</div>
+            <p>Corporate Management<br>Administration Portal</p>
+            
+            <div class="bottom-branding">
+                <div class="company-badge">{{ company.name|default:"Grow Green Trading Co." }}</div>
+                <div class="brand-footer">Secure Enterprise Environment</div>
+            </div>
         </div>
         
         <div class="form-side">

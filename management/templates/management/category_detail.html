@@ -6,6 +6,7 @@
     <title>{{ category.name }} - C-MAP</title>
     <style>
         :root {
+            --primary-color: #6b213b;
             --primary-grad: linear-gradient(135deg, #6b213b, #9c304d);
             --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de);
             --bg-color: #eef1f5; 
@@ -15,7 +16,7 @@
         
         .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); z-index: 10; transition: 0.3s; }
         .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
-        .sidebar-menu li { padding: 15px 20px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .sidebar-menu li { padding: 15px 20px; margin-bottom: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
         .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
 
@@ -27,14 +28,40 @@
         .back-btn { background: white; color: var(--text-dark); padding: 15px 25px; border-radius: 15px; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.2s; }
         .back-btn:hover { background: #e0e0e0; }
         
-        .category-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); margin: 0; }
+        .category-title { background: var(--primary-grad); color: white; padding: 15px 40px; border-radius: 15px; font-size: 24px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); margin: 0; transition: 0.3s;}
         
-        .category-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: auto; margin-top: 10px; }
+
+        /* Changed to grid with exactly 5 equal columns */
+        .category-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 50px; 
+            margin-bottom: auto; 
+            margin-top: 10px; 
+        }
+
+        /* 2. TABLETS & SMALL LAPTOPS: Drop to 3 per row */
+        @media (max-width: 1200px) {
+            .category-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        /* 3. LARGE PHONES: Drop to 2 per row */
+        @media (max-width: 768px) {
+            .category-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* 4. SMALL PHONES: Drop to 1 card per row (Stacked vertically) */
+        @media (max-width: 480px) {
+            .category-grid { grid-template-columns: repeat(1, 1fr); }
+        }
+
+        /* Changed width to 100% so it perfectly fills its column */
+        .category-card { background: white; width: 100%; padding: 40px 20px; border-radius: 15px; text-align: center; font-size: 15px; font-weight: 800; color: var(--text-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.3s; text-transform: uppercase; height: 130%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; letter-spacing: 1px; border-bottom: 4px solid transparent;}
         .card-link { text-decoration: none; display: block; }
-        .category-card { background: white; width: 220px; padding: 40px 20px; border-radius: 15px; text-align: center; font-size: 15px; font-weight: 800; color: var(--text-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; text-transform: uppercase; height: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; letter-spacing: 1px;}
-        .category-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); border-bottom: 4px solid #6b213b; }
-        .add-card { font-size: 18px; color: #999; background: transparent; border: 2px dashed #ccc; box-shadow: none;}
-        .add-card:hover { background: white; border: 2px dashed #9c304d; color: #9c304d; }
+
+        .category-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); border-bottom-color: var(--primary-color); }
+        .add-card { font-size: 18px; color: #999; background: transparent; border: 2px dashed #ccc; box-shadow: none; border-bottom: 2px dashed #ccc;}
+        .add-card:hover { background: white; border: 2px dashed var(--primary-color); color: var(--primary-color); }
 
         .page-footer { text-align: center; color: #aaa; font-size: 12px; padding-top: 40px; padding-bottom: 10px; }
 
@@ -44,6 +71,7 @@
         .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
         .form-group label { font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
         .form-group input { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit;}
+        .form-group input:focus { border-color: var(--primary-color); outline: none; }
         .submit-btn { background: var(--primary-grad); color: white; padding: 12px; border: none; border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
     </style>
 
@@ -52,10 +80,20 @@
             const theme = "{{ request.user.profile.theme|default:'default' }}";
             const root = document.documentElement;
             if (theme === 'midnight') { root.style.setProperty('--primary-color', '#1e293b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #1e293b, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #1e293b)'); } 
-            else if (theme === 'emerald') { root.style.setProperty('--primary-color', '#10b981'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #064e3b, #047857)'); } 
-            else if (theme === 'ocean') { root.style.setProperty('--primary-color', '#0ea5e9'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0c4a6e, #0369a1)'); } 
-            else if (theme === 'amethyst') { root.style.setProperty('--primary-color', '#8b5cf6'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2e1065, #4c1d95)'); } 
-            else if (theme === 'charcoal') { root.style.setProperty('--primary-color', '#0f172a'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #020617, #0f172a)'); } 
+            else if (theme === 'emerald') { root.style.setProperty('--primary-color', '#10b981'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #10b981, #34d399)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #064e3b, #047857)'); } 
+            else if (theme === 'ocean') { root.style.setProperty('--primary-color', '#0ea5e9'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0ea5e9, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0c4a6e, #0369a1)'); } 
+            else if (theme === 'amethyst') { root.style.setProperty('--primary-color', '#8b5cf6'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8b5cf6, #a78bfa)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2e1065, #4c1d95)'); } 
+            else if (theme === 'charcoal') { root.style.setProperty('--primary-color', '#0f172a'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0f172a, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #020617, #0f172a)'); } 
+            else if (theme === 'sunset') { root.style.setProperty('--primary-color', '#ea580c'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #ea580c, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #7c2d12, #ea580c)'); }
+            else if (theme === 'cyberpunk') { root.style.setProperty('--primary-color', '#d946ef'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #d946ef, #ec4899)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #4a044e, #701a75)'); }
+            else if (theme === 'graphite') { root.style.setProperty('--primary-color', '#475569'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #475569, #64748b)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #334155)'); }
+            else if (theme === 'rosegold') { root.style.setProperty('--primary-color', '#e11d48'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #e11d48, #fb7185)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #881337, #be123c)'); }
+            else if (theme === 'deeproyal') { root.style.setProperty('--primary-color', '#4338ca'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #4338ca, #6366f1)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #1e1b4b, #312e81)'); }
+            else if (theme === 'twilight') { root.style.setProperty('--primary-color', '#7e22ce'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #7e22ce, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #3b0764, #7e22ce)'); }
+            else if (theme === 'crimson') { root.style.setProperty('--primary-color', '#991b1b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #991b1b, #ef4444)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #450a0a, #7f1d1d)'); }
+            else if (theme === 'forest') { root.style.setProperty('--primary-color', '#15803d'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #15803d, #22c55e)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #052e16, #14532d)'); }
+            else if (theme === 'mocha') { root.style.setProperty('--primary-color', '#b45309'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #b45309, #d97706)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #451a03, #78350f)'); }
+            else if (theme === 'glacier') { root.style.setProperty('--primary-color', '#0284c7'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0284c7, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #082f49, #0369a1)'); }
             else { root.style.setProperty('--primary-color', '#8c253e'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8c253e, #b03050)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2b1055, #7597de)'); }
         })();
     </script>
@@ -94,7 +132,7 @@
                 <a href="{% url 'dashboard' %}" class="back-btn">← Back</a>
                 <h1 class="category-title">{{ category.name }}</h1>
             </div>
-            </div>
+        </div>
 
         <h3 style="color: #555; margin-top: 10px;">Sub-Folders</h3>
 
@@ -122,7 +160,7 @@
     <div class="modal-overlay" id="addSubCategoryModal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('addSubCategoryModal')">&times;</span>
-            <h2 style="margin-top: 0; color: #6b213b;">New Sub-Folder</h2>
+            <h2 style="margin-top: 0; color: var(--primary-color);">New Sub-Folder</h2>
             <p style="font-size: 13px; color: #666; margin-top: -10px;">Adding inside: <strong>{{ category.name }}</strong></p>
             
             <form method="POST" action="{% url 'add_subcategory' %}">
@@ -137,8 +175,8 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="logoutModal"><div class="modal-content" style="width: 350px; text-align: center;"><h2 style="color: #c94b4b; margin-top:0;">Confirm Logout</h2><p>Are you sure you want to securely exit the system?</p><a href="{% url 'custom_logout' %}" style="background: #c94b4b; color: white; padding: 15px; border-radius: 10px; font-weight: bold; display: block; text-decoration: none; margin-top: 20px;">Yes, Logout</a><button class="submit-btn" style="background: #eee; color: #333; margin-top: 10px;" onclick="closeModal('logoutModal')">Cancel</button></div></div>
-    <div class="modal-overlay" id="unlockModal"><div class="modal-content" style="width: 350px;"><span class="close-modal" onclick="closeModal('unlockModal')">&times;</span><h2 style="margin-top: 0; color: #6b213b;">🔒 Admin Override</h2><p style="font-size: 13px; color: #666;">Enter administrator credentials to unlock this feature for the current session.</p><form method="POST" action="{% url 'admin_unlock' %}">{% csrf_token %}<input type="hidden" name="next_url" id="nextUrlInput"><div class="form-group"><input type="text" name="admin_username" required placeholder="Admin Username"></div><div class="form-group"><input type="password" name="admin_password" required placeholder="Admin Password"></div><button type="submit" class="submit-btn">Unlock Feature</button></form></div></div>
+    <div class="modal-overlay" id="logoutModal"><div class="modal-content" style="width: 350px; text-align: center;"><h2 style="color: var(--primary-color); margin-top:0;">Confirm Logout</h2><p>Are you sure you want to securely exit the system?</p><a href="{% url 'custom_logout' %}" class="submit-btn" style="display: block; text-decoration: none; margin-top: 20px;">Yes, Logout</a><button class="submit-btn" style="background: #eee; color: #333; margin-top: 10px;" onclick="closeModal('logoutModal')">Cancel</button></div></div>
+    <div class="modal-overlay" id="unlockModal"><div class="modal-content" style="width: 350px;"><span class="close-modal" onclick="closeModal('unlockModal')">&times;</span><h2 style="margin-top: 0; color: var(--primary-color);">🔒 Admin Override</h2><p style="font-size: 13px; color: #666;">Enter administrator credentials to unlock this feature for the current session.</p><form method="POST" action="{% url 'admin_unlock' %}">{% csrf_token %}<input type="hidden" name="next_url" id="nextUrlInput"><div class="form-group"><input type="text" name="admin_username" required placeholder="Admin Username"></div><div class="form-group"><input type="password" name="admin_password" required placeholder="Admin Password"></div><button type="submit" class="submit-btn">Unlock Feature</button></form></div></div>
 
     <script>
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }

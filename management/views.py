@@ -8,6 +8,13 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib.auth import authenticate
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import authenticate, login, update_session_auth_hash
+from django.conf import settings
+from django.http import HttpResponse, Http404
+from django.contrib.auth.decorators import login_required
+from django.core.management import call_command
+import io
+from django.contrib import messages
 
 @login_required
 def dashboard(request):
@@ -493,7 +500,10 @@ def update_alerts(request):
         company, _ = Company.objects.get_or_create(id=1)
         company.expire_alert_days = request.POST.get('expire_days', 30)
         company.recent_update_days = request.POST.get('recent_days', 7)
+        company.auto_logout_minutes = request.POST.get('logout_minutes', 30)
         company.save()
+
+        messages.success(request, "System Timers & Alerts saved successfully! 💾")
         
         HistoryLog.objects.create(user=request.user, action="Edited", document_name="Tracking Timers", folder_path="Settings")
     return redirect('settings')
@@ -531,3 +541,90 @@ def filtered_documents(request, filter_type):
         title = "Expired Documents"
 
     return render(request, 'management/filtered_documents.html', {'results': results, 'title': title})
+
+def setup_admin(request):
+    # Security: If an admin already exists, kick them out of this page!
+    if User.objects.filter(is_superuser=True).exists():
+        return redirect('login')
+
+    if request.method == 'POST':
+        admin_user = request.POST.get('username')
+        admin_pass = request.POST.get('password')
+        
+        if admin_user and admin_pass:
+            # Create the Master Key account
+            user = User.objects.create_user(username=admin_user, password=admin_pass)
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
+            
+            # Log them in automatically and push to Step 2
+            login(request, user)
+            return redirect('setup_company')
+            
+    return render(request, 'management/setup_admin.html')
+
+
+@login_required
+def setup_company(request):
+    # Security: If company exists, kick them out of this page!
+    if Company.objects.exists():
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        name = request.POST.get('company_name')
+        if name:
+            company = Company.objects.create(name=name)
+            
+            # Optional: Grab the other fields if they fill them out
+            company.email_address = request.POST.get('email_address', '')
+            company.contact_number = request.POST.get('contact_number', '')
+            company.country = request.POST.get('country', '')
+            
+            if request.FILES.get('company_logo'):
+                company.logo = request.FILES.get('company_logo')
+                
+            company.save()
+            
+            # Log the successful deployment
+            HistoryLog.objects.create(user=request.user, action="Created", document_name="System Initialization", folder_path="Core Server")
+            
+            # UNLOCK THE SYSTEM!
+            return redirect('dashboard')
+            
+    return render(request, 'management/setup_company.html')
+
+@login_required
+def download_backup(request):
+    # Security: Only Superusers can download the database!
+    if not request.user.is_superuser:
+        raise Http404("Only administrators can download backups.")
+        
+    try:
+        # 1. Create a temporary memory buffer
+        backup_data = io.StringIO()
+        
+        # 2. Tell Django to extract the ENTIRE PostgreSQL database into the buffer
+        call_command('dumpdata', stdout=backup_data)
+        
+        # 3. Package it into a downloadable JSON file
+        response = HttpResponse(backup_data.getvalue(), content_type='application/json')
+        response['Content-Disposition'] = 'attachment; filename="cmap_database_backup.json"'
+        
+        # Optional: Log the backup action
+        try:
+            from .models import HistoryLog
+            HistoryLog.objects.create(
+                user=request.user, 
+                action="Created", 
+                document_name="PostgreSQL Database Backup", 
+                folder_path="Core Server"
+            )
+        except Exception:
+            pass 
+            
+        return response
+        
+    except Exception as e:
+        # If anything fails, it will print the exact error message
+        raise Http404(f"Critical Error generating backup: {str(e)}")
