@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#eef1f5">
     <title>Field Builder - {{ subcategory.name }}</title>
     <style>
         :root {
@@ -49,6 +53,44 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; text-align: center; }
         .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
+        .mobile-header { display: none; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; backdrop-filter: blur(2px);}
+
+        @media (max-width: 1200px) {
+            .category-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+            .doc-grid { grid-template-columns: repeat(2, 1fr); } 
+            .builder-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 850px) {
+            body { flex-direction: column; height: auto; overflow-y: auto;}
+            .sidebar { position: fixed; left: -300px; top: 0; height: 100vh; border-radius: 0; box-shadow: none; z-index: 999; }
+            .sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+            .sidebar-overlay.active { display: block; }
+
+            .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+            .hamburger-btn { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; gap: 8px; align-items: center;}
+            
+            .mobile-header .header-user-block { flex-direction: column; gap: 2px; padding: 0; margin: 0; }
+            .mobile-header .user-avatar { width: 45px; height: 45px; border-width: 2px;}
+            .mobile-header .header-role-text { font-size: 11px; }
+            
+            .main-content { padding: 20px; width: 100%; box-sizing: border-box; }
+            
+            /* HIDE THE DUPLICATE DESKTOP AVATAR ON MOBILE */
+            .top-header .header-user-block { display: none; }
+            
+            .top-header { flex-direction: column; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
+            .header-left-cluster, .header-left { flex-direction: column; gap: 15px; width: 100%; align-items: flex-start;}
+            
+            .doc-grid { grid-template-columns: 1fr; }
+            .category-grid { grid-template-columns: repeat(2, 1fr); gap: 15px;}
+            .category-card { height: auto; min-height: 120px; } 
+        }
+        
+        @media (max-width: 480px) {
+            .category-grid { grid-template-columns: repeat(1, 1fr); }
+        }
     </style>
 
     <script>
@@ -75,6 +117,16 @@
     </script>
 </head>
 <body>
+    <div class="mobile-header">
+        <button class="hamburger-btn" onclick="toggleSidebar()">☰ MENU</button>
+        <div class="header-user-block">
+            <div class="user-avatar">
+                {% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}">{% else %}{{ request.user.username|make_list|first|upper }}{% endif %}
+            </div>
+            <div class="header-role-text">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
+        </div>
+    </div>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar">
         <h2 style="text-align:center; margin-bottom: 10px; letter-spacing: 2px;">C-MAP</h2>
         <ul class="sidebar-menu">
@@ -185,6 +237,11 @@
         const timeoutMilliseconds = 30 * 60 * 1000; 
         function resetTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(function() { window.location.href = "{% url 'custom_logout' %}"; }, timeoutMilliseconds); }
         window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer; document.onscroll = resetTimer;
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
     </script>
 </body>
 </html>

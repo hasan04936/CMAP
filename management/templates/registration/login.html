@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6b213b">
     <title>Login - C-MAP Enterprise</title>
     <style>
         :root { 
@@ -13,16 +16,24 @@
             margin: 0; 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             display: flex; 
-            height: 100vh; 
+            min-height: 100vh; 
             background-color: #eef1f5; 
             align-items: center; 
             justify-content: center; 
-            overflow: hidden;
+        }
+        
+        .login-wrapper {
+            padding: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            box-sizing: border-box;
         }
         
         .login-box { 
             display: flex; 
             width: 900px; 
+            max-width: 100%; 
             height: 520px; 
             background: white; 
             border-radius: 30px; 
@@ -43,13 +54,11 @@
             position: relative;
         }
 
-        /* Invisible spacer to push the main logo perfectly to the center */
         .top-spacer { margin-bottom: auto; }
 
         .brand-side h1 { font-size: 45px; font-weight: 900; margin: 0; letter-spacing: 3px; text-shadow: 0 5px 15px rgba(0,0,0,0.2);}
         .brand-side p { font-size: 15px; opacity: 0.85; margin-top: 10px; line-height: 1.6; }
         
-        /* New container to group the badge and footer at the bottom */
         .bottom-branding {
             margin-top: auto;
             display: flex;
@@ -74,7 +83,6 @@
         
         .form-side { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: center; background: #ffffff;}
         
-        /* Centered the Welcome Back text */
         .form-side h2 { color: var(--primary-color); margin-top: 0; font-size: 28px; margin-bottom: 30px; font-weight: 800; text-align: center;}
         
         .form-group { margin-bottom: 22px; }
@@ -87,44 +95,96 @@
         .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(107, 33, 59, 0.3); }
         
         .error-msg { color: #dc2626; font-size: 13px; font-weight: bold; margin-bottom: 25px; text-align: center; background: #fef2f2; padding: 12px; border-radius: 10px; border: 1px solid #fecaca;}
+
+        /* ========================================= */
+        /* --- HIGH-END MOBILE RESPONSIVENESS    --- */
+        /* ========================================= */
+        @media (max-width: 850px) {
+            body {
+                align-items: flex-start; /* Pushes content to the very top */
+                background-color: white; /* Blends the bottom of the screen with the form */
+            }
+            .login-wrapper {
+                padding: 0;
+            }
+            .login-box { 
+                flex-direction: column; 
+                height: 100vh; /* Fills the whole mobile screen natively */
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .brand-side { 
+                flex: none; 
+                padding: 50px 20px 80px 20px; /* The 80px bottom padding gives space for the form to overlap */
+            }
+            .top-spacer { 
+                display: none; 
+            }
+            .bottom-branding {
+                margin-top: 25px;
+            }
+            .brand-side h1 { 
+                font-size: 38px; 
+            }
+            
+            /* The Magic Overlap Card */
+            .form-side { 
+                flex: 1;
+                padding: 40px 25px; 
+                background: white;
+                border-radius: 30px 30px 0 0; /* Curves only the top two corners */
+                margin-top: -40px; /* Pulls the white card UP over the maroon background */
+                box-shadow: 0 -10px 25px rgba(0,0,0,0.1); /* Casts a shadow UPWARDS */
+                justify-content: flex-start; /* Pushes the login form nicely to the top of the card */
+            }
+            .form-side h2 {
+                font-size: 24px;
+                margin-bottom: 25px;
+                margin-top: 25px;
+            }
+            .submit-btn {
+                padding: 18px; /* Slightly thicker button for easier tapping on mobile */
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="login-wrapper">
+        <div class="login-box">
+            <div class="brand-side">
+                <div class="top-spacer"></div>
+                
+                <h1>C-MAP</h1>
+                <p>Corporate Management<br>Administration Portal</p>
+                
+                <div class="bottom-branding">
+                    <div class="company-badge">{{ company.name|default:"Grow Green Trading Co." }}</div>
+                    <div class="brand-footer">Secure Enterprise Environment</div>
+                </div>
+            </div>
+            
+            <div class="form-side">
+                <h2>Welcome Back</h2>
+                
+                {% if form.errors %}
+                    <div class="error-msg">Incorrect Username or Password. Please try again.</div>
+                {% endif %}
 
-    <div class="login-box">
-        <div class="brand-side">
-            <div class="top-spacer"></div>
-            
-            <h1>C-MAP</h1>
-            <p>Corporate Management<br>Administration Portal</p>
-            
-            <div class="bottom-branding">
-                <div class="company-badge">{{ company.name|default:"Grow Green Trading Co." }}</div>
-                <div class="brand-footer">Secure Enterprise Environment</div>
+                <form method="POST" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Admin Username</label>
+                        <input type="text" name="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Secure Password</label>
+                        <input type="password" name="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="submit-btn">Access System</button>
+                </form>
             </div>
         </div>
-        
-        <div class="form-side">
-            <h2>Welcome Back</h2>
-            
-            {% if form.errors %}
-                <div class="error-msg">Incorrect Username or Password. Please try again.</div>
-            {% endif %}
-
-            <form method="POST" action="{% url 'login' %}">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label>Admin Username</label>
-                    <input type="text" name="username" required autocomplete="username">
-                </div>
-                <div class="form-group">
-                    <label>Secure Password</label>
-                    <input type="password" name="password" required autocomplete="current-password">
-                </div>
-                <button type="submit" class="submit-btn">Access System</button>
-            </form>
-        </div>
     </div>
-
 </body>
 </html>

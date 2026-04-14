@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#eef1f5">
     <title>System History - C-MAP</title>
     <style>
         :root { --primary-color: #6b213b; --primary-grad: linear-gradient(135deg, #6b213b, #9c304d); --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de); --bg-color: #eef1f5; --text-dark: #222; }
@@ -23,49 +27,53 @@
         .page-title-box { background: var(--primary-grad); color: white; padding: 12px 30px; border-radius: 15px; font-size: 20px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); margin: 0; }
         
         .header-right { display: flex; flex-direction: column; align-items: center; gap: 5px;}
-        .header-profile-pill {
-            display: flex;
-            align-items: center;
-            background: white;
-            padding: 5px 5px 5px 25px; /* Wide on left, tight on right */
-            border-radius: 50px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
-            gap: 8px;
-            height: fit-content;
-            transition: 0.3s;
+        /* --- CLEAN FLOATING AVATAR --- */
+        .header-user-block { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 5px; }
+        .user-avatar { width: 65px; height: 65px; border-radius: 50%; background: var(--primary-grad); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); padding: 3px; box-sizing: border-box; transition: transform 0.3s; }
+        .user-avatar:hover { transform: scale(1.05); }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 3px solid var(--bg-color); box-sizing: border-box; }
+        .header-role-text { font-weight: 800; color: #666; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* ========================================= */
+        /* --- THE MAGIC MOBILE CSS              --- */
+        /* ========================================= */
+        .mobile-header { display: none; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; backdrop-filter: blur(2px);}
+
+        @media (max-width: 1200px) {
+            .category-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+            .doc-grid { grid-template-columns: repeat(2, 1fr); } 
+            .builder-grid { grid-template-columns: 1fr; }
         }
-        .header-profile-pill:hover {
-            box-shadow: 0 12px 34px rgba(0,0,0,0.09);
-            transform: translateY(-2px);
+
+        @media (max-width: 850px) {
+            body { flex-direction: column; height: auto; overflow-y: auto;}
+            .sidebar { position: fixed; left: -300px; top: 0; height: 100vh; border-radius: 0; box-shadow: none; z-index: 999; }
+            .sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+            .sidebar-overlay.active { display: block; }
+
+            .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+            .hamburger-btn { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; gap: 8px; align-items: center;}
+            
+            .mobile-header .header-user-block { flex-direction: column; gap: 2px; padding: 0; margin: 0; }
+            .mobile-header .user-avatar { width: 45px; height: 45px; border-width: 2px;}
+            .mobile-header .header-role-text { font-size: 11px; }
+            
+            .main-content { padding: 20px; width: 100%; box-sizing: border-box; }
+            
+            /* HIDE THE DUPLICATE DESKTOP AVATAR ON MOBILE */
+            .top-header .header-user-block { display: none; }
+            
+            .top-header { flex-direction: column; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
+            .header-left-cluster, .header-left { flex-direction: column; gap: 15px; width: 100%; align-items: flex-start;}
+            
+            .doc-grid { grid-template-columns: 1fr; }
+            .category-grid { grid-template-columns: repeat(2, 1fr); gap: 15px;}
+            .category-card { height: auto; min-height: 120px; } 
         }
-        .header-role-text {
-            font-weight: 900;
-            color: var(--text-dark);
-            font-size: 20px;
-            letter-spacing: 0.5px;
-        }
-        .user-avatar { 
-            width: 55px; 
-            height: 60px; 
-            border-radius: 50%; 
-            background: var(--primary-grad); 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 20px; 
-            font-weight: bold; 
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); 
-            padding: 3px; /* Creates the outer theme ring */
-            box-sizing: border-box;
-        }
-        .user-avatar img {
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            border-radius: 60%; 
-            border: 3px solid white; /* Creates the white gap inside the ring */
-            box-sizing: border-box;
+        
+        @media (max-width: 480px) {
+            .category-grid { grid-template-columns: repeat(1, 1fr); }
         }
         .user-name { font-weight: 700; color: #666; font-size: 12px; text-transform: capitalize;}
 
@@ -118,7 +126,6 @@
             <div class="header-role-text">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
         </div>
     </div>
-
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar">
         <h2 style="text-align:center; margin-bottom: 10px; letter-spacing: 2px;">C-MAP</h2>
@@ -196,6 +203,11 @@
         const timeoutMilliseconds = 30 * 60 * 1000; 
         function resetTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(function() { window.location.href = "{% url 'custom_logout' %}"; }, timeoutMilliseconds); }
         window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer; document.onscroll = resetTimer;
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
     </script>
 </body>
 </html>
