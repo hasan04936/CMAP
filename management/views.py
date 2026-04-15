@@ -1,20 +1,41 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from datetime import timedelta
-from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue, UserProfile, HistoryLog
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout
+from django.contrib.auth import logout, authenticate, login, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.contrib.auth import authenticate
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth import authenticate, login, update_session_auth_hash
 from django.conf import settings
 from django.http import HttpResponse, Http404
-from django.contrib.auth.decorators import login_required
 from django.core.management import call_command
-import io
 from django.contrib import messages
+import io
+
+from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue, UserProfile, HistoryLog
+from .utils import send_telegram_alert
+
+# ====================================================================
+# SMART EXTRACTOR: Finds the "Name" from dynamic custom fields
+# ====================================================================
+def get_doc_name(document):
+    # Try to find a field that specifically has "name" in the title
+    name_val = CustomFieldValue.objects.filter(
+        document=document,
+        custom_field__field_type__in=['text', 'email'],
+        custom_field__field_name__icontains='name'
+    ).exclude(value='').first()
+    
+    if name_val: return name_val.value
+    
+    # If no "name" field exists, just grab the very first text answer they typed
+    first_val = CustomFieldValue.objects.filter(
+        document=document,
+        custom_field__field_type__in=['text', 'email', 'number']
+    ).exclude(value='').first()
+    
+    if first_val: return first_val.value
+    return "Unnamed Entry"
+# ====================================================================
 
 @login_required
 def dashboard(request):
@@ -73,17 +94,16 @@ def subcategory_detail(request, subcategory_id):
     
     # 1. POST: Handle Form Submissions
     if request.method == 'POST':
-        # Generate a dynamic title since we removed the input field
         dynamic_title = f"{subcategory.name} Entry - {timezone.now().strftime('%Y%m%d_%H%M%S')}"
         
-        # Step A: Create the base Document (No file required initially)
+        # Step A: Create the base Document
         doc = Document.objects.create(
             title=dynamic_title,
             category=subcategory.category,
             sub_category=subcategory,
         )
         
-        # Step B: Loop through and save all Custom Fields dynamically!
+        # Step B: Loop through and save all Custom Fields dynamically
         for field in subcategory.custom_fields.all():
             input_name = f"custom_{field.id}" 
             
@@ -96,6 +116,27 @@ def subcategory_detail(request, subcategory_id):
                 if text_val:
                     CustomFieldValue.objects.create(document=doc, custom_field=field, value=text_val)
                     
+        # Grab the human-readable name!
+        display_name = get_doc_name(doc)
+        
+        # --- THE TRACKER: HUMAN READABLE UPLOAD ---
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Created", 
+            document_name=display_name, 
+            folder_path=f"{subcategory.category.name} > {subcategory.name}"
+        )
+        
+        # --- TELEGRAM TRIGGER: HUMAN READABLE UPLOAD ---
+        alert_msg = (
+            f"🟢 <b>NEW RECORD ADDED</b>\n\n"
+            f"👤 <b>{request.user.username.upper()}</b> added a new <b>{subcategory.name}</b> "
+            f"into the <b>{subcategory.category.name}</b> folder for <b>{display_name}</b>."
+        )
+        send_telegram_alert(alert_msg)
+        # ------------------------------------
+
+        messages.success(request, 'Entry Saved Successfully!')
         return redirect('subcategory_detail', subcategory_id=subcategory.id)
 
     # 2. GET: Display the Page
@@ -114,14 +155,28 @@ def delete_document(request, document_id):
     subcategory_id = document.sub_category.id
     
     if request.method == 'POST':
-        # --- THE TRACKER: DOCUMENT DELETED ---
+        # Grab the human-readable name before deleting
+        display_name = get_doc_name(document)
+        
+        # --- THE TRACKER: HUMAN READABLE DELETION ---
         HistoryLog.objects.create(
             user=request.user, 
             action="Deleted", 
-            document_name=document.title, 
+            document_name=display_name, 
             folder_path=f"{document.sub_category.category.name} > {document.sub_category.name}"
         )
+        
+        # --- TELEGRAM TRIGGER: HUMAN READABLE DELETION ---
+        alert_msg = (
+            f"🗑️ <b>RECORD DELETED</b>\n\n"
+            f"👤 <b>{request.user.username.upper()}</b> deleted the <b>{document.sub_category.name}</b> "
+            f"from the <b>{document.sub_category.category.name}</b> folder of <b>{display_name}</b>."
+        )
+        send_telegram_alert(alert_msg)
+        # ----------------------------------
+        
         document.delete()
+        messages.success(request, 'Entry Deleted Successfully!')
         
     return redirect('subcategory_detail', subcategory_id=subcategory_id)
 
@@ -131,7 +186,6 @@ def edit_document(request, document_id):
     subcategory = document.sub_category
     
     if request.method == 'POST':
-        # Loop through all dynamic fields and update their specific values
         for field in subcategory.custom_fields.all():
             input_name = f"custom_{field.id}"
             custom_val, created = CustomFieldValue.objects.get_or_create(document=document, custom_field=field)
@@ -149,21 +203,33 @@ def edit_document(request, document_id):
                     
         document.save()
         
-        # --- THE TRACKER: DOCUMENT EDITED ---
+        # Grab the updated human-readable name!
+        display_name = get_doc_name(document)
+        
+        # --- THE TRACKER: HUMAN READABLE EDIT ---
         HistoryLog.objects.create(
             user=request.user, 
             action="Edited", 
-            document_name=document.title, 
+            document_name=display_name, 
             folder_path=f"{subcategory.category.name} > {subcategory.name}"
         )
+        
+        # --- TELEGRAM TRIGGER: HUMAN READABLE EDIT ---
+        alert_msg = (
+            f"✏️ <b>RECORD UPDATED</b>\n\n"
+            f"👤 <b>{request.user.username.upper()}</b> updated the <b>{subcategory.name}</b> "
+            f"in the <b>{subcategory.category.name}</b> folder for <b>{display_name}</b>."
+        )
+        send_telegram_alert(alert_msg)
+        # ------------------------------
+        
+        messages.success(request, 'Entry Updated Successfully!')
         
     return redirect('subcategory_detail', subcategory_id=subcategory.id)
 
 @login_required
 def history_log(request):
-    # Grab all history logs, ordered by newest first (-timestamp)
     logs = HistoryLog.objects.all().order_by('-timestamp')
-    
     context = {
         'logs': logs,
     }
@@ -171,13 +237,11 @@ def history_log(request):
 
 @login_required
 def settings_page(request):
-    # ADD THIS TO THE TOP OF settings_page AND company_profile
     if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
-        return redirect('dashboard') # Kicks them out if they try to hack the URL!
+        return redirect('dashboard')
     
     company = Company.objects.first()
     categories = Category.objects.all()
-    # Grab all users registered in the system
     users = User.objects.all()
     
     context = {
@@ -193,6 +257,7 @@ def add_category(request):
         name = request.POST.get('category_name')
         if name:
             Category.objects.create(name=name)
+            messages.success(request, 'Main Folder Created!')
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 
 @login_required
@@ -203,6 +268,7 @@ def add_subcategory(request):
         if name and category_id:
             category = get_object_or_404(Category, id=category_id)
             SubCategory.objects.create(name=name, category=category)
+            messages.success(request, 'Sub-Folder Created!')
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 
 @login_required
@@ -215,13 +281,13 @@ def edit_category(request, category_id):
             category.name = name
             category.save()
             
-            # --- THE TRACKER: CATEGORY EDITED ---
             HistoryLog.objects.create(
                 user=request.user, 
                 action="Edited", 
                 document_name=f"Folder: {old_name} -> {name}", 
                 folder_path="Settings > Architecture"
             )
+            messages.success(request, 'Folder Renamed!')
             
     return redirect('settings')
 
@@ -231,15 +297,14 @@ def delete_category(request, category_id):
     if request.method == 'POST':
         cat_name = category.name
         
-        # --- THE TRACKER: CATEGORY DELETED ---
         HistoryLog.objects.create(
             user=request.user, 
             action="Deleted", 
             document_name=f"Main Folder: {cat_name}", 
             folder_path="Settings > Architecture"
         )
-        
         category.delete()
+        messages.success(request, 'Folder Deleted!')
     return redirect('settings')
 
 @login_required
@@ -252,13 +317,13 @@ def edit_subcategory(request, subcategory_id):
             subcategory.name = name
             subcategory.save()
             
-            # --- THE TRACKER: SUBCATEGORY EDITED ---
             HistoryLog.objects.create(
                 user=request.user, 
                 action="Edited", 
                 document_name=f"Sub-Folder: {old_name} -> {name}", 
                 folder_path=f"Settings > Architecture > {subcategory.category.name}"
             )
+            messages.success(request, 'Sub-Folder Renamed!')
             
     return redirect('settings')
 
@@ -269,24 +334,21 @@ def delete_subcategory(request, subcategory_id):
         sub_name = subcategory.name
         cat_name = subcategory.category.name
         
-        # --- THE TRACKER: SUBCATEGORY DELETED ---
         HistoryLog.objects.create(
             user=request.user, 
             action="Deleted", 
             document_name=f"Sub-Folder: {sub_name}", 
             folder_path=f"Settings > Architecture > {cat_name}"
         )
-        
         subcategory.delete()
+        messages.success(request, 'Sub-Folder Deleted!')
     return redirect('settings')
 
 @login_required
 def manage_fields(request, subcategory_id):
-    # Get the specific sub-folder we are building fields for
     subcategory = get_object_or_404(SubCategory, id=subcategory_id)
     
     if request.method == 'POST':
-        # Check if we are ADDING a field
         if 'add_field' in request.POST:
             field_name = request.POST.get('field_name')
             field_type = request.POST.get('field_type')
@@ -302,21 +364,18 @@ def manage_fields(request, subcategory_id):
                     show_on_card=show_on_card 
                 )
                 
-        # Check if we are DELETING a field
         elif 'delete_field' in request.POST:
             field_id = request.POST.get('field_id')
             field_to_delete = CustomField.objects.filter(id=field_id).first()
             if field_to_delete:
                 field_name = field_to_delete.field_name
                 
-                # --- THE TRACKER: FIELD DELETED ---
                 HistoryLog.objects.create(
                     user=request.user, 
                     action="Deleted", 
                     document_name=f"Database Field: {field_name}", 
                     folder_path=f"Settings > Field Builder > {subcategory.name}"
                 )
-                
                 field_to_delete.delete()
             
         return redirect('manage_fields', subcategory_id=subcategory.id)
@@ -327,17 +386,15 @@ def manage_fields(request, subcategory_id):
     }
     return render(request, 'management/manage_fields.html', context)
 
-# NEW SECURE LOGOUT FUNCTION
 def custom_logout(request):
     logout(request)
     return redirect('login')
 
 @login_required
 def company_profile(request):
-    # ADD THIS TO THE TOP OF settings_page AND company_profile
     if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
-        return redirect('dashboard') # Kicks them out if they try to hack the URL!
-    # Get or create the company profile so it never crashes
+        return redirect('dashboard') 
+        
     company, created = Company.objects.get_or_create(id=1)
 
     if request.method == 'POST':
@@ -355,7 +412,6 @@ def company_profile(request):
             
         company.save()
         
-        # --- THE TRACKER: COMPANY PROFILE UPDATED ---
         HistoryLog.objects.create(
             user=request.user, 
             action="Edited", 
@@ -363,6 +419,12 @@ def company_profile(request):
             folder_path="System > Company Profile"
         )
         
+        # --- TELEGRAM TRIGGER: COMPANY UPDATE ---
+        alert_msg = f"🏢 <b>COMPANY PROFILE UPDATED</b>\n\n👤 <b>{request.user.username.upper()}</b> updated the core company settings and licenses."
+        send_telegram_alert(alert_msg)
+        # ----------------------------------------
+        
+        messages.success(request, 'Company Profile Updated!')
         return redirect('company_profile')
 
     return render(request, 'management/company_profile.html', {'company': company})
@@ -373,7 +435,6 @@ def global_search(request):
     results = []
     
     if query:
-        # MAGIC SEARCH: Looks at the Title OR ANY custom field answer!
         results = Document.objects.filter(
             Q(title__icontains=query) |
             Q(custom_values__value__icontains=query)
@@ -390,18 +451,34 @@ def add_user(request):
     if request.method == 'POST':
         new_username = request.POST.get('username')
         new_password = request.POST.get('password')
-        role = request.POST.get('role') # 'admin' or 'staff'
+        role = request.POST.get('role') 
         
-        # Make sure the username doesn't already exist to prevent crashes
         if new_username and new_password and not User.objects.filter(username=new_username).exists():
-            # Create the user securely
             user = User.objects.create_user(username=new_username, password=new_password)
             
-            # If they selected Admin, give them superuser powers
             if role == 'admin':
                 user.is_superuser = True
                 user.is_staff = True
                 user.save()
+            
+            HistoryLog.objects.create(
+                user=request.user, 
+                action="Created", 
+                document_name=f"New User: {new_username}", 
+                folder_path="Settings > Accounts"
+            )
+            
+            # --- TELEGRAM TRIGGER: NEW USER ---
+            alert_msg = (
+                f"👤 <b>NEW SYSTEM USER CREATED</b>\n\n"
+                f"👤 <b>{request.user.username.upper()}</b> granted system access to a new user.\n\n"
+                f"<b>Username:</b> {new_username}\n"
+                f"<b>Role Level:</b> {role.upper()}"
+            )
+            send_telegram_alert(alert_msg)
+            # ----------------------------------
+            
+            messages.success(request, 'New User Added Successfully!')
                 
     return redirect('settings')
 
@@ -409,11 +486,9 @@ def add_user(request):
 def delete_user(request, user_id):
     user_to_delete = get_object_or_404(User, id=user_id)
     
-    # SECURITY: Make sure they aren't trying to delete themselves!
     if request.method == 'POST' and user_to_delete != request.user:
         deleted_username = user_to_delete.username
         
-        # --- THE TRACKER: USER DELETED ---
         HistoryLog.objects.create(
             user=request.user, 
             action="Deleted", 
@@ -421,7 +496,13 @@ def delete_user(request, user_id):
             folder_path="Settings > System Users"
         )
         
+        # --- TELEGRAM TRIGGER: USER DELETED ---
+        alert_msg = f"🚫 <b>USER ACCOUNT DELETED</b>\n\n👤 <b>{request.user.username.upper()}</b> permanently revoked access and deleted the account for <b>{deleted_username}</b>."
+        send_telegram_alert(alert_msg)
+        # --------------------------------------
+        
         user_to_delete.delete()
+        messages.success(request, 'User Deleted Successfully!')
         
     return redirect('settings')
 
@@ -430,16 +511,14 @@ def admin_unlock(request):
     if request.method == 'POST':
         admin_user = request.POST.get('admin_username')
         admin_pass = request.POST.get('admin_password')
-        next_url = request.POST.get('next_url', 'dashboard') # Where they wanted to go
+        next_url = request.POST.get('next_url', 'dashboard') 
         
-        # Check if the credentials match a real admin
         user = authenticate(request, username=admin_user, password=admin_pass)
         if user is not None and user.is_superuser:
-            # UNLOCK THE SYSTEM!
             request.session['admin_unlocked'] = True
+            messages.success(request, 'Admin Override Engaged 🔓')
             return redirect(next_url)
             
-    # If they type the wrong password, just send them back to the dashboard
     return redirect('dashboard')
 
 @login_required
@@ -447,18 +526,17 @@ def change_avatar(request):
     if request.method == 'POST':
         avatar_file = request.FILES.get('avatar')
         if avatar_file:
-            # Get the user's profile, or create one if it doesn't exist yet
             profile, created = UserProfile.objects.get_or_create(user=request.user)
             profile.avatar = avatar_file
             profile.save()
 
-            # --- THE TRACKER: AVATAR UPDATED ---
             HistoryLog.objects.create(
                 user=request.user, 
                 action="Edited", 
                 document_name="Profile Avatar", 
                 folder_path="Settings > My User Profile"
             )
+            messages.success(request, 'Avatar Updated Successfully!')
 
     return redirect('settings')
 
@@ -468,20 +546,18 @@ def reset_password(request):
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
         
-        # Verify the passwords match and aren't empty
         if new_password and new_password == confirm_password:
             request.user.set_password(new_password)
             request.user.save()
-            # This crucial line stops Django from logging you out after a password change!
             update_session_auth_hash(request, request.user) 
             
-            # --- THE TRACKER: PASSWORD UPDATED ---
             HistoryLog.objects.create(
                 user=request.user, 
                 action="Edited", 
                 document_name="Account Password", 
                 folder_path="Settings > My User Profile"
             )
+            messages.success(request, 'Password Reset Successfully!')
             
     return redirect('settings')
 
@@ -503,9 +579,9 @@ def update_alerts(request):
         company.auto_logout_minutes = request.POST.get('logout_minutes', 30)
         company.save()
 
+        HistoryLog.objects.create(user=request.user, action="Edited", document_name="Tracking Timers", folder_path="Settings")
         messages.success(request, "System Timers & Alerts saved successfully! 💾")
         
-        HistoryLog.objects.create(user=request.user, action="Edited", document_name="Tracking Timers", folder_path="Settings")
     return redirect('settings')
 
 @login_required
@@ -543,7 +619,6 @@ def filtered_documents(request, filter_type):
     return render(request, 'management/filtered_documents.html', {'results': results, 'title': title})
 
 def setup_admin(request):
-    # Security: If an admin already exists, kick them out of this page!
     if User.objects.filter(is_superuser=True).exists():
         return redirect('login')
 
@@ -552,22 +627,18 @@ def setup_admin(request):
         admin_pass = request.POST.get('password')
         
         if admin_user and admin_pass:
-            # Create the Master Key account
             user = User.objects.create_user(username=admin_user, password=admin_pass)
             user.is_superuser = True
             user.is_staff = True
             user.save()
             
-            # Log them in automatically and push to Step 2
             login(request, user)
             return redirect('setup_company')
             
     return render(request, 'management/setup_admin.html')
 
-
 @login_required
 def setup_company(request):
-    # Security: If company exists, kick them out of this page!
     if Company.objects.exists():
         return redirect('dashboard')
 
@@ -576,7 +647,6 @@ def setup_company(request):
         if name:
             company = Company.objects.create(name=name)
             
-            # Optional: Grab the other fields if they fill them out
             company.email_address = request.POST.get('email_address', '')
             company.contact_number = request.POST.get('contact_number', '')
             company.country = request.POST.get('country', '')
@@ -586,32 +656,23 @@ def setup_company(request):
                 
             company.save()
             
-            # Log the successful deployment
             HistoryLog.objects.create(user=request.user, action="Created", document_name="System Initialization", folder_path="Core Server")
-            
-            # UNLOCK THE SYSTEM!
             return redirect('dashboard')
             
     return render(request, 'management/setup_company.html')
 
 @login_required
 def download_backup(request):
-    # Security: Only Superusers can download the database!
     if not request.user.is_superuser:
         raise Http404("Only administrators can download backups.")
         
     try:
-        # 1. Create a temporary memory buffer
         backup_data = io.StringIO()
-        
-        # 2. Tell Django to extract the ENTIRE PostgreSQL database into the buffer
         call_command('dumpdata', stdout=backup_data)
         
-        # 3. Package it into a downloadable JSON file
         response = HttpResponse(backup_data.getvalue(), content_type='application/json')
         response['Content-Disposition'] = 'attachment; filename="cmap_database_backup.json"'
         
-        # Optional: Log the backup action
         try:
             from .models import HistoryLog
             HistoryLog.objects.create(
@@ -620,11 +681,12 @@ def download_backup(request):
                 document_name="PostgreSQL Database Backup", 
                 folder_path="Core Server"
             )
+            # --- TELEGRAM TRIGGER: BACKUP ---
+            send_telegram_alert(f"💾 <b>DATABASE BACKUP INITIATED</b>\n\n👤 <b>{request.user.username.upper()}</b> successfully downloaded a copy of the core PostgreSQL database.")
         except Exception:
             pass 
             
         return response
         
     except Exception as e:
-        # If anything fails, it will print the exact error message
         raise Http404(f"Critical Error generating backup: {str(e)}")

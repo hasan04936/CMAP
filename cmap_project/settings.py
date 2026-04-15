@@ -27,7 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://told-chairman-august-striking.trycloudflare.com' 
+]
 # Application definition
 
 INSTALLED_APPS = [
@@ -131,3 +133,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+# =========================================
+# TELEGRAM NOTIFICATIONS SETUP
+# =========================================
+TELEGRAM_BOT_TOKEN = '8728731535:AAHgETPQrG-5T5FyQ9XrbpNnyzncIIE2sfM'
+TELEGRAM_CHAT_ID = '-1003916283906'

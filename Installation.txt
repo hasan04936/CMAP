@@ -1,0 +1,21 @@
+For Windows 
+================================
+Put the C-MAP_Enterprise_v1 folder on a USB drive and move it to the new Windows PC.
+
+Ensure that new PC has Python installed (and that the "Add Python to PATH" checkbox was clicked during installation).
+
+Open the C-MAP folder and double-click install.bat.
+
+For Linux 
+=================================
+open their terminal in the C-MAP folder
+
+chmod +x install.sh
+
+./install.sh
+
+in case of error depandancies 
+run in terminal 
+
+sudo apt-get update && sudo apt-get install -y libpq-dev python3-dev build-essential
+
