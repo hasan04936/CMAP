@@ -19,10 +19,21 @@ class Company(models.Model):
     created_date = models.DateTimeField(auto_now_add=True, null=True)
 
     auto_logout_minutes = models.IntegerField(default=30)
+
+    staff_permission_level = models.CharField(max_length=20, default='full') 
+    alert_on_upload = models.BooleanField(default=True)
+    alert_on_edit = models.BooleanField(default=True)
+    alert_on_delete = models.BooleanField(default=True)
+    alert_on_system = models.BooleanField(default=True)
     
 
     expire_alert_days = models.IntegerField(default=30)
     recent_update_days = models.IntegerField(default=7)
+
+    # API & Integrations
+    telegram_bot_token = models.CharField(max_length=255, blank=True, null=True)
+    telegram_chat_id = models.CharField(max_length=100, blank=True, null=True)
+    custom_domain = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.name

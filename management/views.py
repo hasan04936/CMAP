@@ -10,9 +10,13 @@ from django.http import HttpResponse, Http404
 from django.core.management import call_command
 from django.contrib import messages
 import io
-
+import threading
+import os
+import time
+import re
 from .models import Company, Category, SubCategory, Document, CustomField, CustomFieldValue, UserProfile, HistoryLog
 from .utils import send_telegram_alert
+import subprocess
 
 # ====================================================================
 # SMART EXTRACTOR: Finds the "Name" from dynamic custom fields
@@ -94,6 +98,12 @@ def subcategory_detail(request, subcategory_id):
     
     # 1. POST: Handle Form Submissions
     if request.method == 'POST':
+        # --- NEW SECURITY: BLOCK READ-ONLY STAFF FROM UPLOADING ---
+        if not request.user.is_superuser and getattr(company, 'staff_permission_level', 'full') == 'read':
+            messages.error(request, "Security: Staff accounts are currently set to Read-Only.")
+            return redirect('subcategory_detail', subcategory_id=subcategory.id)
+        # ----------------------------------------------------------
+
         dynamic_title = f"{subcategory.name} Entry - {timezone.now().strftime('%Y%m%d_%H%M%S')}"
         
         # Step A: Create the base Document
@@ -127,14 +137,15 @@ def subcategory_detail(request, subcategory_id):
             folder_path=f"{subcategory.category.name} > {subcategory.name}"
         )
         
-        # --- TELEGRAM TRIGGER: HUMAN READABLE UPLOAD ---
-        alert_msg = (
-            f"🟢 <b>NEW RECORD ADDED</b>\n\n"
-            f"👤 <b>{request.user.username.upper()}</b> added a new <b>{subcategory.name}</b> "
-            f"into the <b>{subcategory.category.name}</b> folder for <b>{display_name}</b>."
-        )
-        send_telegram_alert(alert_msg)
-        # ------------------------------------
+        # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+        if getattr(company, 'alert_on_upload', True):
+            alert_msg = (
+                f"🟢 <b>NEW RECORD ADDED</b>\n\n"
+                f"👤 <b>{request.user.username.upper()}</b> added a new <b>{subcategory.name}</b> "
+                f"into the <b>{subcategory.category.name}</b> folder for <b>{display_name}</b>."
+            )
+            send_telegram_alert(alert_msg)
+        # ------------------------------------------------
 
         messages.success(request, 'Entry Saved Successfully!')
         return redirect('subcategory_detail', subcategory_id=subcategory.id)
@@ -153,8 +164,15 @@ def subcategory_detail(request, subcategory_id):
 def delete_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
     subcategory_id = document.sub_category.id
+    company = Company.objects.first()
     
     if request.method == 'POST':
+        # --- NEW SECURITY: BLOCK READ & UPLOAD STAFF FROM DELETING ---
+        if not request.user.is_superuser and getattr(company, 'staff_permission_level', 'full') in ['read', 'upload']:
+            messages.error(request, "Security: You do not have permission to delete documents.")
+            return redirect('subcategory_detail', subcategory_id=subcategory_id)
+        # -------------------------------------------------------------
+
         # Grab the human-readable name before deleting
         display_name = get_doc_name(document)
         
@@ -166,14 +184,15 @@ def delete_document(request, document_id):
             folder_path=f"{document.sub_category.category.name} > {document.sub_category.name}"
         )
         
-        # --- TELEGRAM TRIGGER: HUMAN READABLE DELETION ---
-        alert_msg = (
-            f"🗑️ <b>RECORD DELETED</b>\n\n"
-            f"👤 <b>{request.user.username.upper()}</b> deleted the <b>{document.sub_category.name}</b> "
-            f"from the <b>{document.sub_category.category.name}</b> folder of <b>{display_name}</b>."
-        )
-        send_telegram_alert(alert_msg)
-        # ----------------------------------
+        # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+        if getattr(company, 'alert_on_delete', True):
+            alert_msg = (
+                f"🗑️ <b>RECORD DELETED</b>\n\n"
+                f"👤 <b>{request.user.username.upper()}</b> deleted the <b>{document.sub_category.name}</b> "
+                f"from the <b>{document.sub_category.category.name}</b> folder of <b>{display_name}</b>."
+            )
+            send_telegram_alert(alert_msg)
+        # ------------------------------------------------
         
         document.delete()
         messages.success(request, 'Entry Deleted Successfully!')
@@ -184,8 +203,15 @@ def delete_document(request, document_id):
 def edit_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
     subcategory = document.sub_category
+    company = Company.objects.first()
     
     if request.method == 'POST':
+        # --- NEW SECURITY: BLOCK READ & UPLOAD STAFF FROM EDITING ---
+        if not request.user.is_superuser and getattr(company, 'staff_permission_level', 'full') in ['read', 'upload']:
+            messages.error(request, "Security: You do not have permission to edit documents.")
+            return redirect('subcategory_detail', subcategory_id=subcategory.id)
+        # ------------------------------------------------------------
+
         for field in subcategory.custom_fields.all():
             input_name = f"custom_{field.id}"
             custom_val, created = CustomFieldValue.objects.get_or_create(document=document, custom_field=field)
@@ -214,14 +240,15 @@ def edit_document(request, document_id):
             folder_path=f"{subcategory.category.name} > {subcategory.name}"
         )
         
-        # --- TELEGRAM TRIGGER: HUMAN READABLE EDIT ---
-        alert_msg = (
-            f"✏️ <b>RECORD UPDATED</b>\n\n"
-            f"👤 <b>{request.user.username.upper()}</b> updated the <b>{subcategory.name}</b> "
-            f"in the <b>{subcategory.category.name}</b> folder for <b>{display_name}</b>."
-        )
-        send_telegram_alert(alert_msg)
-        # ------------------------------
+        # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+        if getattr(company, 'alert_on_edit', True):
+            alert_msg = (
+                f"✏️ <b>RECORD UPDATED</b>\n\n"
+                f"👤 <b>{request.user.username.upper()}</b> updated the <b>{subcategory.name}</b> "
+                f"in the <b>{subcategory.category.name}</b> folder for <b>{display_name}</b>."
+            )
+            send_telegram_alert(alert_msg)
+        # ------------------------------------------------
         
         messages.success(request, 'Entry Updated Successfully!')
         
@@ -244,12 +271,107 @@ def settings_page(request):
     categories = Category.objects.all()
     users = User.objects.all()
     
+    # --- MAGIC: READ THE HIDDEN CLOUDFLARE URL ---
+    tunnel_url = None
+    log_file = os.path.join(settings.BASE_DIR, 'tunnel.log')
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # --- UPDATED TO SEARCH FOR NGROK INSTEAD OF CLOUDFLARE ---
+                match = re.search(r'(https://slouchy-womanless-vagueness\.ngrok-free\.dev)', content)
+                if match:
+                    tunnel_url = match.group(1)
+        except Exception:
+            pass
+    # ---------------------------------------------
+    
     context = {
         'company': company,
         'categories': categories,
         'users': users,
+        'tunnel_url': tunnel_url, # Pass the URL to the web page
     }
     return render(request, 'management/settings.html', context)
+
+@login_required
+def toggle_tunnel(request):
+    if not request.user.is_superuser:
+        return redirect('dashboard')
+        
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        log_file = os.path.join(settings.BASE_DIR, 'tunnel.log')
+        # Pointing to the new Ngrok file
+        ngrok_exe = os.path.join(settings.BASE_DIR, 'ngrok.exe') 
+        company = Company.objects.first()
+        
+        if action == 'start':
+            # 1. INVISIBLE KILL COMMAND
+            subprocess.run(["taskkill", "/F", "/IM", "ngrok.exe", "/T"], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            time.sleep(0.5) # Give Windows half a second to release the file lock!
+            
+            # Delete old logs gracefully
+            if os.path.exists(log_file):
+                try:
+                    os.remove(log_file)
+                except Exception:
+                    pass # If Windows blocks it, just ignore and overwrite it
+            
+            # 2. INVISIBLE START COMMAND
+            cmd = [ngrok_exe, "http", "--url=slouchy-womanless-vagueness.ngrok-free.dev", "8000", "--log", log_file]
+            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            # 3. SMART WAIT: Check the log every 1 second (up to 12 seconds maximum)
+            tunnel_url = None
+            for _ in range(12):
+                time.sleep(1) # wait 1 second
+                if os.path.exists(log_file):
+                    try:
+                        with open(log_file, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                            # Search specifically for your static Ngrok domain
+                            match = re.search(r'(https://slouchy-womanless-vagueness\.ngrok-free\.dev)', content)
+                            if match:
+                                tunnel_url = match.group(1)
+                                break  # Found the URL! Exit the waiting loop immediately.
+                    except Exception:
+                        pass
+            
+            if tunnel_url:
+                # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+                if company and getattr(company, 'alert_on_system', True):
+                    alert_msg = (
+                        f"🌍 <b>REMOTE ACCESS ONLINE</b>\n\n"
+                        f"👤 <b>{request.user.username.upper()}</b> opened the server for mobile access.\n\n"
+                        f"🔗 <b>Click to Access C-MAP:</b>\n{tunnel_url}\n\n"
+                        f"<i>Note: The system is running on a secure static domain.</i>"
+                    )
+                    send_telegram_alert(alert_msg)
+                messages.success(request, "Remote Access Activated! 🌍🚀")
+            else:
+                messages.warning(request, "Tunnel started, but couldn't extract URL for Telegram. Please check logs.")
+            
+        elif action == 'stop':
+            # 1. Kill the invisible Ngrok tunnel 
+            os.system("taskkill /F /IM ngrok.exe /T > NUL 2>&1")
+            time.sleep(0.5) # Give Windows half a second to release the file lock!
+            
+            # Delete the log gracefully
+            if os.path.exists(log_file):
+                try:
+                    os.remove(log_file)
+                except Exception:
+                    pass # If Windows blocks it, just ignore it so it doesn't crash the page
+            
+            # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+            if company and getattr(company, 'alert_on_system', True):
+                alert_msg = f"🔒 <b>REMOTE ACCESS OFFLINE</b>\n\n👤 <b>{request.user.username.upper()}</b> disabled mobile access. The system is now restricted to the local office network."
+                send_telegram_alert(alert_msg)
+            
+            messages.success(request, "Remote Access Disabled. System is now Local Only. 🔒")
+            
+    return redirect('settings')
 
 @login_required
 def add_category(request):
@@ -386,9 +508,47 @@ def manage_fields(request, subcategory_id):
     }
     return render(request, 'management/manage_fields.html', context)
 
-def custom_logout(request):
+def execute_shutdown():
+    # Wait 2 seconds to allow the offline screen to load on the browser
+    time.sleep(2)
+    
+    # 1. Kill the Cloudflare Tunnel
+    os.system("taskkill /F /IM cloudflared.exe /T > NUL 2>&1")
+    
+    # 2. Kill the Python server (This is the EXACT command that worked for you before!)
+    os.system("taskkill /F /IM python.exe /T > NUL 2>&1")
+
+# 1. THE SCREEN LOCK (Safe: Keeps server running for mobile users)
+def lock_screen(request):
     logout(request)
+    messages.success(request, 'Screen Locked Successfully. Server is still running.')
     return redirect('login')
+
+# 2. THE POWER BUTTON (Kills the whole system)
+def shutdown_server(request):
+    logout(request)
+    threading.Thread(target=execute_shutdown).start()
+    
+    html = """
+    <html>
+    <head><title>C-MAP Offline</title></head>
+    <body style="background-color: #f3f4f6; text-align: center; font-family: sans-serif; padding-top: 15vh;">
+        <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; max-width: 500px;">
+            <h1 style="color: #ef4444; margin-bottom: 10px; margin-top: 0;">🔌 C-MAP Offline</h1>
+            <p style="color: #4b5563; font-size: 1.1rem; margin-bottom: 5px;">The enterprise server has been shut down successfully.</p>
+            <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 25px;">You may safely close this browser window.</p>
+            
+            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                <p style="color: #3730a3; font-size: 0.9rem; margin: 0; font-weight: bold;">
+                    To use the app again: Close this tab and double-click your C-MAP desktop icon to restart the server.
+                </p>
+            </div>
+        </div>
+        <script>setTimeout(function() { window.close(); }, 3000);</script>
+    </body>
+    </html>
+    """
+    return HttpResponse(html)
 
 @login_required
 def company_profile(request):
@@ -419,10 +579,11 @@ def company_profile(request):
             folder_path="System > Company Profile"
         )
         
-        # --- TELEGRAM TRIGGER: COMPANY UPDATE ---
-        alert_msg = f"🏢 <b>COMPANY PROFILE UPDATED</b>\n\n👤 <b>{request.user.username.upper()}</b> updated the core company settings and licenses."
-        send_telegram_alert(alert_msg)
-        # ----------------------------------------
+        # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+        if getattr(company, 'alert_on_system', True):
+            alert_msg = f"🏢 <b>COMPANY PROFILE UPDATED</b>\n\n👤 <b>{request.user.username.upper()}</b> updated the core company settings and licenses."
+            send_telegram_alert(alert_msg)
+        # ------------------------------------------------
         
         messages.success(request, 'Company Profile Updated!')
         return redirect('company_profile')
@@ -468,15 +629,17 @@ def add_user(request):
                 folder_path="Settings > Accounts"
             )
             
-            # --- TELEGRAM TRIGGER: NEW USER ---
-            alert_msg = (
-                f"👤 <b>NEW SYSTEM USER CREATED</b>\n\n"
-                f"👤 <b>{request.user.username.upper()}</b> granted system access to a new user.\n\n"
-                f"<b>Username:</b> {new_username}\n"
-                f"<b>Role Level:</b> {role.upper()}"
-            )
-            send_telegram_alert(alert_msg)
-            # ----------------------------------
+            company = Company.objects.first()
+            # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+            if company and getattr(company, 'alert_on_system', True):
+                alert_msg = (
+                    f"👤 <b>NEW SYSTEM USER CREATED</b>\n\n"
+                    f"👤 <b>{request.user.username.upper()}</b> granted system access to a new user.\n\n"
+                    f"<b>Username:</b> {new_username}\n"
+                    f"<b>Role Level:</b> {role.upper()}"
+                )
+                send_telegram_alert(alert_msg)
+            # ------------------------------------------------
             
             messages.success(request, 'New User Added Successfully!')
                 
@@ -496,10 +659,12 @@ def delete_user(request, user_id):
             folder_path="Settings > System Users"
         )
         
-        # --- TELEGRAM TRIGGER: USER DELETED ---
-        alert_msg = f"🚫 <b>USER ACCOUNT DELETED</b>\n\n👤 <b>{request.user.username.upper()}</b> permanently revoked access and deleted the account for <b>{deleted_username}</b>."
-        send_telegram_alert(alert_msg)
-        # --------------------------------------
+        company = Company.objects.first()
+        # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+        if company and getattr(company, 'alert_on_system', True):
+            alert_msg = f"🚫 <b>USER ACCOUNT DELETED</b>\n\n👤 <b>{request.user.username.upper()}</b> permanently revoked access and deleted the account for <b>{deleted_username}</b>."
+            send_telegram_alert(alert_msg)
+        # ------------------------------------------------
         
         user_to_delete.delete()
         messages.success(request, 'User Deleted Successfully!')
@@ -574,15 +739,52 @@ def save_theme(request):
 def update_alerts(request):
     if request.method == 'POST':
         company, _ = Company.objects.get_or_create(id=1)
+        
+        # Save standard timers
         company.expire_alert_days = request.POST.get('expire_days', 30)
         company.recent_update_days = request.POST.get('recent_days', 7)
         company.auto_logout_minutes = request.POST.get('logout_minutes', 30)
+        
+        # --- NEW SECURITY & TELEGRAM TOGGLES ---
+        company.staff_permission_level = request.POST.get('staff_permission', 'full')
+        company.alert_on_upload = request.POST.get('alert_upload') == 'on'
+        company.alert_on_edit = request.POST.get('alert_edit') == 'on'
+        company.alert_on_delete = request.POST.get('alert_delete') == 'on'
+        company.alert_on_system = request.POST.get('alert_system') == 'on'
+        
+        # 👇 THESE ARE THE CRITICAL LINES YOU ARE MISSING 👇
+        company.telegram_bot_token = request.POST.get('telegram_bot_token', '')
+        company.telegram_chat_id = request.POST.get('telegram_chat_id', '')
+        company.custom_domain = request.POST.get('custom_domain', '')
+        # 👆 --------------------------------------------- 👆
+        
         company.save()
 
-        HistoryLog.objects.create(user=request.user, action="Edited", document_name="Tracking Timers", folder_path="Settings")
+        HistoryLog.objects.create(user=request.user, action="Edited", document_name="Tracking Timers & APIs", folder_path="Settings")
         messages.success(request, "System Timers & Alerts saved successfully! 💾")
         
     return redirect('settings')
+
+# --- NEW MAINTENANCE FUNCTION ---
+@login_required
+def prune_history_logs(request):
+    if not request.user.is_superuser:
+        return redirect('dashboard')
+        
+    if request.method == 'POST':
+        cutoff_date = timezone.now() - timedelta(days=90)
+        deleted_count, _ = HistoryLog.objects.filter(timestamp__lt=cutoff_date).delete()
+        
+        HistoryLog.objects.create(
+            user=request.user, 
+            action="Deleted", 
+            document_name=f"{deleted_count} Old Logs", 
+            folder_path="System Maintenance"
+        )
+        messages.success(request, f"System Cleanup Complete! {deleted_count} old logs were removed. 🧹")
+        
+    return redirect('settings')
+# --------------------------------
 
 @login_required
 def filtered_documents(request, filter_type):
@@ -637,6 +839,7 @@ def setup_admin(request):
             
     return render(request, 'management/setup_admin.html')
 
+
 @login_required
 def setup_company(request):
     if Company.objects.exists():
@@ -656,6 +859,7 @@ def setup_company(request):
                 
             company.save()
             
+            # Since the user created their account in the previous step, request.user now works perfectly!
             HistoryLog.objects.create(user=request.user, action="Created", document_name="System Initialization", folder_path="Core Server")
             return redirect('dashboard')
             
@@ -681,8 +885,10 @@ def download_backup(request):
                 document_name="PostgreSQL Database Backup", 
                 folder_path="Core Server"
             )
-            # --- TELEGRAM TRIGGER: BACKUP ---
-            send_telegram_alert(f"💾 <b>DATABASE BACKUP INITIATED</b>\n\n👤 <b>{request.user.username.upper()}</b> successfully downloaded a copy of the core PostgreSQL database.")
+            company = Company.objects.first()
+            # --- TELEGRAM TRIGGER: CONTROLLED BY SETTINGS ---
+            if company and getattr(company, 'alert_on_system', True):
+                send_telegram_alert(f"💾 <b>DATABASE BACKUP INITIATED</b>\n\n👤 <b>{request.user.username.upper()}</b> successfully downloaded a copy of the core database.")
         except Exception:
             pass 
             
@@ -690,3 +896,19 @@ def download_backup(request):
         
     except Exception as e:
         raise Http404(f"Critical Error generating backup: {str(e)}")
+    
+@login_required
+def download_logs(request):
+    if not request.user.is_superuser:
+        raise Http404("Only administrators can download logs.")
+        
+    log_file = os.path.join(settings.BASE_DIR, 'tunnel.log')
+    
+    if os.path.exists(log_file):
+        with open(log_file, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='text/plain')
+            response['Content-Disposition'] = 'attachment; filename="cmap_server_logs.txt"'
+            return response
+    else:
+        messages.warning(request, "No log file found. The system has not recorded any tunnel data yet.")
+        return redirect('settings')

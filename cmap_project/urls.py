@@ -1,11 +1,12 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from management import views
-from django.urls import path, include
- 
+from django.urls import re_path
+from django.views.static import serve
 
+# 1. First, define the main urlpatterns list
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.dashboard, name='dashboard'),
@@ -27,10 +28,13 @@ urlpatterns = [
     path('settings/subcategory/<int:subcategory_id>/delete/', views.delete_subcategory, name='delete_subcategory'),
     path('settings/subcategory/<int:subcategory_id>/fields/', views.manage_fields, name='manage_fields'),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('logout/', views.custom_logout, name='custom_logout'),
+    
+    # --- THE FIXED LOGOUT & SHUTDOWN URLS ---
+    path('logout/', views.lock_screen, name='custom_logout'), 
+    path('shutdown/', views.shutdown_server, name='shutdown_server'),
+    # ----------------------------------------
+    
     path('admin_unlock/', views.admin_unlock, name='admin_unlock'),
-    path('change_avatar/', views.change_avatar, name='change_avatar'),
-    path('reset_password/', views.reset_password, name='reset_password'),
     path('change_avatar/', views.change_avatar, name='change_avatar'),
     path('reset_password/', views.reset_password, name='reset_password'),
     path('save_theme/', views.save_theme, name='save_theme'),
@@ -39,7 +43,18 @@ urlpatterns = [
     path('setup/admin/', views.setup_admin, name='setup_admin'),
     path('setup/company/', views.setup_company, name='setup_company'),
     path('settings/backup/', views.download_backup, name='download_backup'),
+    path('toggle-tunnel/', views.toggle_tunnel, name='toggle_tunnel'),
+    path('settings/logs/', views.download_logs, name='download_logs'),
+    path('settings/prune/', views.prune_history_logs, name='prune_history_logs'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# 2. THEN, append the secure static paths at the very end
+if not settings.DEBUG:
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {
+            'document_root': settings.MEDIA_ROOT,
+        }),
+        re_path(r'^static/(?P<path>.*)$', serve, {
+            'document_root': settings.STATIC_ROOT,
+        }),
+    ]

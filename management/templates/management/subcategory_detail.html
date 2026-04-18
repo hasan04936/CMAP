@@ -381,13 +381,33 @@
     </div>
 
     <div class="modal-overlay" id="logoutModal">
-        <div class="modal-content" style="width: 350px; text-align: center;">
-            <h2 style="color: var(--primary-color); margin-top:0;">Confirm Logout</h2>
-            <p style="font-size: 13px; color: #555;">Are you sure you want to securely exit?</p>
-            <a href="{% url 'custom_logout' %}" class="submit-btn" style="display: block; text-decoration: none; margin-top: 15px;">Yes, Logout</a>
-            <button class="action-btn" style="width: 100%; padding: 12px; margin-top: 10px;" onclick="closeModal('logoutModal')">Cancel</button>
+        <div class="modal-content" style="width: 420px; text-align: center;">
+            <h2 style="color: var(--primary-color); margin-top:0;">System Exit</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 25px; line-height: 1.5;">
+                What would you like to do? You can log out of your account or completely shut down the core server.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                
+                <a href="{% url 'custom_logout' %}" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                        <span>🔒</span> Log Out Account
+                    </div>
+                    <span style="font-size: 11px; font-weight: normal; color: #166534;">Keeps the server running for mobile users</span>
+                </a>
+                
+                <a href="{% url 'shutdown_server' %}" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 16px;">
+                        <span>🔌</span> Power Off Server
+                    </div>
+                    <span style="font-size: 11px; font-weight: normal; color: #991b1b;">Kills the server and disconnects everyone</span>
+                </a>
+                
+                <button class="submit-btn" style="background: #f3f4f6; color: #4b5563; margin-top: 10px; box-shadow: none; border: 1px solid #e5e7eb;" onclick="closeModal('logoutModal')">Cancel</button>
+            </div>
         </div>
     </div>
+
     
     <div class="modal-overlay" id="unlockModal">
         <div class="modal-content" style="width: 350px;">
@@ -461,7 +481,7 @@
 
         // Security Logout Timer
         let inactivityTimer;
-        const timeoutMilliseconds = 30 * 60 * 1000; 
+        const timeoutMilliseconds = {{ company.auto_logout_minutes|default:30 }} * 60 * 1000; 
         function resetTimer() {
             clearTimeout(inactivityTimer);
             inactivityTimer = setTimeout(function() {
