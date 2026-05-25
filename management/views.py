@@ -69,12 +69,59 @@ def dashboard(request):
         custom_values__custom_field__field_name__icontains='expire'
     ).distinct().count()
     
+    # 4. MOCKUP METRICS
+    total_folders = categories.count()
+    total_documents = Document.objects.count()
+    active_documents = max(0, total_documents - expired_count)
+    
+    # Live storage utilization percentage
+    storage_percentage = 24
+    if total_documents > 0:
+        storage_percentage = max(10, min(95, int((active_documents / total_documents) * 100)))
+
+    # Conic percentages for Donut chart breakdown
+    total_pie = expired_count + expire_soon_count + active_documents
+    expired_pct = int((expired_count / total_pie) * 100) if total_pie > 0 else 0
+    soon_pct = int((expire_soon_count / total_pie) * 100) if total_pie > 0 else 0
+    active_pct = 100 - expired_pct - soon_pct if total_pie > 0 else 100
+
+    # 5. RECENT ACTIVITIES DIRECTORY DATA
+    recent_activities = []
+    for cat in categories[:5]:
+        latest_doc = Document.objects.filter(category=cat).order_by('-uploaded_date').first()
+        last_modified = latest_doc.uploaded_date if latest_doc else None
+        
+        has_expired = Document.objects.filter(
+            category=cat,
+            custom_values__custom_field__field_type='date',
+            custom_values__value__lt=today_str,
+            custom_values__custom_field__field_name__icontains='expire'
+        ).distinct().exists()
+        
+        recent_activities.append({
+            'category': cat,
+            'name': cat.name,
+            'description': cat.description or f"{cat.name} related documents",
+            'doc_count': Document.objects.filter(category=cat).count(),
+            'last_modified': last_modified,
+            'status': 'Attention' if has_expired else 'Active'
+        })
+    
     context = {
         'company': company,
         'categories': categories,
         'updated_today': recent_updates_count,
         'expire_soon': expire_soon_count,
         'expired': expired_count,
+        'total_folders': total_folders,
+        'total_documents': total_documents,
+        'active_documents': active_documents,
+        'storage_percentage': storage_percentage,
+        'expired_pct': expired_pct,
+        'soon_pct': soon_pct,
+        'active_pct': active_pct,
+        'recent_activities': recent_activities,
+        'recent_sessions': HistoryLog.objects.select_related('user').order_by('-timestamp')[:4],
     }
     return render(request, 'management/dashboard.html', context)
 
@@ -530,21 +577,189 @@ def shutdown_server(request):
     threading.Thread(target=execute_shutdown).start()
     
     html = """
-    <html>
-    <head><title>C-MAP Offline</title></head>
-    <body style="background-color: #f3f4f6; text-align: center; font-family: sans-serif; padding-top: 15vh;">
-        <div style="background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; max-width: 500px;">
-            <h1 style="color: #ef4444; margin-bottom: 10px; margin-top: 0;">🔌 C-MAP Offline</h1>
-            <p style="color: #4b5563; font-size: 1.1rem; margin-bottom: 5px;">The enterprise server has been shut down successfully.</p>
-            <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 25px;">You may safely close this browser window.</p>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>C-MAP Server Offline</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                --app-bg: #030d28;
+                --card-bg: rgba(255, 255, 255, 0.03);
+                --border-color: rgba(255, 255, 255, 0.08);
+                --text-main: #ffffff;
+                --text-muted: rgba(255, 255, 255, 0.7);
+                --danger: #ff4d4d;
+                --danger-glow: rgba(255, 77, 77, 0.25);
+            }
             
-            <div style="background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe;">
-                <p style="color: #3730a3; font-size: 0.9rem; margin: 0; font-weight: bold;">
-                    To use the app again: Close this tab and double-click your C-MAP desktop icon to restart the server.
-                </p>
+            * { box-sizing: border-box; }
+            
+            body {
+                margin: 0;
+                padding: 0;
+                font-family: var(--font-sans);
+                background: radial-gradient(circle at 50% 50%, #0d1b3e 0%, #030d28 100%);
+                color: var(--text-main);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+
+            .container {
+                width: min(520px, calc(100vw - 32px));
+                padding: 40px 30px;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 28px;
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+                text-align: center;
+                animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            .icon-wrapper {
+                width: 84px;
+                height: 84px;
+                background: rgba(255, 77, 77, 0.1);
+                border: 1px solid var(--danger);
+                color: var(--danger);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 32px;
+                margin: 0 auto 24px;
+                box-shadow: 0 0 30px var(--danger-glow);
+                animation: pulse 2s infinite ease-in-out;
+            }
+
+            h1 {
+                font-size: 26px;
+                font-weight: 900;
+                margin: 0 0 12px;
+                letter-spacing: -0.5px;
+            }
+
+            p {
+                font-size: 15px;
+                color: var(--text-muted);
+                line-height: 1.6;
+                margin: 0 0 28px;
+                font-weight: 700;
+            }
+
+            .info-box {
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 18px;
+                padding: 18px;
+                margin-bottom: 28px;
+                font-size: 13.5px;
+                line-height: 1.5;
+                color: rgba(255, 255, 255, 0.8);
+                font-weight: 800;
+                text-align: left;
+            }
+
+            .btn-close {
+                min-height: 48px;
+                width: 100%;
+                background: linear-gradient(135deg, #ff4d4d, #d63030);
+                color: #ffffff;
+                border: none;
+                border-radius: 16px;
+                font-weight: 900;
+                font-size: 15px;
+                cursor: pointer;
+                box-shadow: 0 10px 25px var(--danger-glow);
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .btn-close:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 14px 30px rgba(255, 77, 77, 0.35);
+            }
+
+            .btn-close:active {
+                transform: translateY(0);
+            }
+
+            .countdown {
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.4);
+                margin-top: 16px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--danger-glow); }
+                50% { transform: scale(1.05); box-shadow: 0 0 35px rgba(255, 77, 77, 0.4); }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="icon-wrapper">🔌</div>
+            <h1>C-MAP Server Offline</h1>
+            <p>The enterprise server has been shut down successfully.<br>You may now safely close this browser window.</p>
+            
+            <div class="info-box">
+                👉 <strong>To restart C-MAP:</strong> Double-click the <strong>C-MAP Enterprise</strong> desktop icon on your PC to launch the server again.
             </div>
+
+            <button class="btn-close" onclick="closeWindow()">
+                Close Tab Now
+            </button>
+
+            <div class="countdown" id="countdown">Closing automatically in 3s...</div>
         </div>
-        <script>setTimeout(function() { window.close(); }, 3000);</script>
+
+        <script>
+            var secondsLeft = 3;
+            var countdownEl = document.getElementById('countdown');
+
+            function closeWindow() {
+                // Standard close
+                window.close();
+                // Forceful workaround trick
+                window.open('', '_self');
+                window.close();
+                // Navigational fallback
+                window.location.href = "about:blank";
+            }
+
+            var interval = setInterval(function() {
+                secondsLeft--;
+                if (secondsLeft <= 0) {
+                    clearInterval(interval);
+                    closeWindow();
+                } else {
+                    countdownEl.innerText = "Closing automatically in " + secondsLeft + "s...";
+                }
+            }, 1000);
+
+            setTimeout(closeWindow, 3000);
+        </script>
     </body>
     </html>
     """
@@ -643,7 +858,7 @@ def add_user(request):
             
             messages.success(request, 'New User Added Successfully!')
                 
-    return redirect('settings')
+    return redirect('user_settings')
 
 @login_required
 def delete_user(request, user_id):
@@ -669,7 +884,7 @@ def delete_user(request, user_id):
         user_to_delete.delete()
         messages.success(request, 'User Deleted Successfully!')
         
-    return redirect('settings')
+    return redirect('user_settings')
 
 @login_required
 def admin_unlock(request):
@@ -703,7 +918,7 @@ def change_avatar(request):
             )
             messages.success(request, 'Avatar Updated Successfully!')
 
-    return redirect('settings')
+    return redirect('user_settings')
 
 @login_required
 def reset_password(request):
@@ -724,7 +939,7 @@ def reset_password(request):
             )
             messages.success(request, 'Password Reset Successfully!')
             
-    return redirect('settings')
+    return redirect('user_settings')
 
 @login_required
 def save_theme(request):
@@ -910,5 +1125,63 @@ def download_logs(request):
             response['Content-Disposition'] = 'attachment; filename="cmap_server_logs.txt"'
             return response
     else:
-        messages.warning(request, "No log file found. The system has not recorded any tunnel data yet.")
+        messages.warning(request, "System logs are empty because remote access has not been activated yet.")
         return redirect('settings')
+
+@login_required
+def user_settings(request):
+    if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
+        return redirect('dashboard')
+    company = Company.objects.first()
+    users = User.objects.all().order_by('id')
+    return render(request, 'management/user.html', {
+        'company': company,
+        'users': users,
+    })
+
+@login_required
+def theme_settings(request):
+    company = Company.objects.first()
+    return render(request, 'management/theme.html', {
+        'company': company,
+    })
+
+import subprocess
+import time
+
+@login_required
+def toggle_tunnel(request):
+    if not (request.user.is_superuser or request.session.get('admin_unlocked', False)):
+        return redirect('dashboard')
+        
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'start':
+            # Stop any existing ngrok process first
+            os.system("taskkill /F /IM ngrok.exe /T > NUL 2>&1")
+            try:
+                # Start ngrok in background
+                ngrok_path = os.path.join(settings.BASE_DIR, 'ngrok.exe')
+                subprocess.Popen([ngrok_path, 'http', '8000'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                # Wait for ngrok to allocate public URL
+                time.sleep(2.5)
+                
+                import urllib.request
+                import json
+                req = urllib.request.Request("http://127.0.0.1:4040/api/tunnels")
+                with urllib.request.urlopen(req) as response:
+                    res = json.loads(response.read().decode())
+                    public_url = res['tunnels'][0]['public_url']
+                    request.session['tunnel_url'] = public_url
+                    messages.success(request, "Remote Access Tunnel Started Successfully! 🚀")
+            except Exception as e:
+                messages.error(request, f"Failed to start remote tunnel: {str(e)}")
+                
+        elif action == 'stop':
+            os.system("taskkill /F /IM ngrok.exe /T > NUL 2>&1")
+            if 'tunnel_url' in request.session:
+                del request.session['tunnel_url']
+            messages.success(request, "Remote Access Tunnel Stopped.")
+            
+    return redirect('settings')

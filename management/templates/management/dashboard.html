@@ -1,403 +1,795 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#eef1f5">
-    <title>C-MAP Dashboard</title>
-    <style>
-        :root {
-            --primary-color: #6b213b;
-            --primary-grad: linear-gradient(135deg, #6b213b, #9c304d);
-            --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de);
-            --bg-color: #eef1f5; 
-            --text-dark: #222;
+{% extends 'management/base.html' %}
+
+{% block title %}Dashboard | C-MAP{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Top Search Bar & Header */
+    .dashboard-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 22px;
+        margin-bottom: 30px;
+    }
+
+    .search-bar-form {
+        width: min(440px, 100%);
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 20px;
+        background: var(--card-bg);
+        border-radius: 26px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .search-icon {
+        width: 20px;
+        height: 20px;
+        border: 3px solid var(--text-muted);
+        border-radius: 50%;
+        position: relative;
+        flex-shrink: 0;
+        opacity: 0.7;
+    }
+
+    .search-icon::after {
+        content: "";
+        width: 8px;
+        height: 3px;
+        border-radius: 99px;
+        background: var(--text-muted);
+        position: absolute;
+        right: -6px;
+        bottom: -3px;
+        transform: rotate(45deg);
+    }
+
+    .search-bar-form input {
+        border: 0;
+        min-height: 34px;
+        background: transparent;
+        padding: 6px 4px 6px 10px;
+        box-shadow: none;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+        outline: none;
+        width: 100%;
+    }
+
+    .search-badge {
+        font-size: 11px;
+        font-weight: 800;
+        background: var(--app-bg);
+        color: var(--text-muted);
+        padding: 4px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-family: var(--font-display);
+        flex-shrink: 0;
+    }
+
+    /* Layout structure */
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 32px;
+        align-items: start;
+    }
+
+    .dashboard-main {
+        min-height: calc(100vh - 58px);
+    }
+
+    /* Mockup Stats Cards (Horizontal) */
+    .mock-stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+
+    .stat-icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-number {
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--text-main);
+        margin-top: 4px;
+        line-height: 1;
+    }
+
+    /* Mockup Folder Grid (Realistic Layers) */
+    .folder-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 20px;
+        margin-bottom: 35px;
+    }
+
+    .folder-card {
+        position: relative;
+        width: 100%;
+        height: 130px;
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .folder-card:hover {
+        transform: translateY(-6px) scale(1.02);
+    }
+
+    .folder-body-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .folder-svg-icon {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 6px 15px rgba(0, 0, 0, 0.12));
+        transition: filter 0.2s ease;
+    }
+
+    .folder-card:hover .folder-svg-icon {
+        filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.16)) drop-shadow(0 0 8px var(--f-color-light));
+    }
+
+    .folder-label-text {
+        position: absolute;
+        bottom: 24px;
+        left: 0;
+        right: 0;
+        font-family: var(--font-display);
+        font-size: 13.5px;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: 0.8px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+        z-index: 10;
+        text-align: center;
+        padding: 0 16px;
+        word-break: break-word;
+    }
+
+    .folder-theme-1 {
+        --f-color-start: var(--primary);
+        --f-color-light: var(--folder-purple, #ddd6ff);
+    }
+
+    .folder-theme-2 {
+        --f-color-start: var(--accent-pink);
+        --f-color-light: var(--folder-pink, #ffd5f2);
+    }
+
+    .folder-theme-3 {
+        --f-color-start: var(--accent-cyan);
+        --f-color-light: var(--folder-cyan, #d2f7fb);
+    }
+
+    .folder-theme-add {
+        --f-color-start: var(--success);
+        --f-color-light: #dcfce7;
+    }
+
+    /* Recent Activities Table */
+    .recent-table-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 24px;
+        padding: 24px 28px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 20px;
+    }
+
+    .recent-table-title {
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .premium-badge {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--primary);
+        text-transform: none;
+        letter-spacing: 0;
+        cursor: pointer;
+    }
+
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .mockup-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .mockup-table th, .mockup-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .mockup-table th {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .mockup-table td {
+        color: var(--text-main);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .badge-capsule {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .badge-active {
+        background: #ecfdf5;
+        color: #10b981;
+    }
+
+    .badge-attention {
+        background: #fffbeb;
+        color: #f59e0b;
+    }
+
+    /* Right Sidebar Cards */
+    .right-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .premium-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .premium-card:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+
+    /* Profile Banner */
+    .profile-banner {
+        height: 64px;
+        background: linear-gradient(135deg, #6366f1 0%, #c084fc 100%);
+        position: relative;
+    }
+
+    .profile-avatar-wrapper {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        border: 4px solid var(--card-bg);
+        margin: -34px auto 8px;
+        position: relative;
+        overflow: hidden;
+        background: var(--primary-grad);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 900;
+        font-size: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .profile-avatar-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-name {
+        text-align: center;
+        font-family: var(--font-display);
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--text-main);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .verified-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 15px;
+        height: 15px;
+        background: #3b82f6;
+        color: #ffffff;
+        font-size: 9px;
+        border-radius: 50%;
+        font-weight: 900;
+    }
+
+    .profile-role {
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 800;
+        text-transform: uppercase;
+        margin: 4px 0 0;
+        letter-spacing: 0.5px;
+    }
+
+    .profile-email {
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-light);
+        margin: 8px 0 8px;
+        font-weight: 700;
+    }
+
+    /* Donut Chart styling */
+    .donut-chart {
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        background: conic-gradient(
+            #6366f1 0% {{ expired_pct }}%, 
+            #ec4899 {{ expired_pct }}% {{ expired_pct|add:soon_pct }}%, 
+            #10b981 {{ expired_pct|add:soon_pct }}% {{ expired_pct|add:soon_pct|add:active_pct }}%,
+            #e2e8f0 {{ expired_pct|add:soon_pct|add:active_pct }}% 100%
+        );
+        position: relative;
+        margin: 0 auto 20px;
+        display: grid;
+        place-items: center;
+    }
+
+    .donut-chart::before {
+        content: '';
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        background: var(--card-bg);
+        position: absolute;
+    }
+
+    .donut-chart-text {
+        position: absolute;
+        text-align: center;
+        font-family: var(--font-display);
+        z-index: 5;
+    }
+
+    .donut-chart-num {
+        font-size: 26px;
+        font-weight: 900;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .donut-chart-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-top: 2px;
+    }
+
+    /* Breakdown lists */
+    .breakdown-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-muted);
+    }
+
+    .breakdown-row:last-child {
+        border-bottom: none;
+    }
+
+    .breakdown-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .breakdown-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-layout {
+            grid-template-columns: 1fr;
         }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
-        
-        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); z-index: 1000; transition: 0.3s; flex-shrink: 0;}
-        .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
-        .sidebar-menu li { padding: 15px 20px; margin-bottom: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
-        .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px 50px; }
-        
-        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px; width: 100%;}
-        
-        .header-left-cluster { display: flex; gap: 10px; width: 70%; }
-        
-        .company-search-stack { display: flex; flex-direction: column; gap: 15px; width: 400px; flex-shrink: 0;}
-        .company-card { background: var(--primary-grad); color: white; padding: 0 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); width: 100%; height: 160px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; transition: 0.3s;}
-        .company-name { font-size: 20px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;}
-        .company-details { font-size: 11px; color: rgba(255,255,255,0.85); line-height: 1.6; }
-        
-        .search-bar-form { display: flex; width: 100%; background: white; border-radius: 50px; padding: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.04); align-items: center; transition: 0.3s; border: 2px solid transparent; box-sizing: border-box;}
-        .search-bar-form:focus-within { border-color: var(--primary-color); }
-        .search-bar-form input { border: none; width: 100%; padding: 12px 10px 12px 20px; font-size: 14px; outline: none; background: transparent; }
-        .search-bar-form button { background: var(--primary-grad); color: white; border: none; padding: 12px 35px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.3s; }
-        .search-bar-form button:hover { opacity: 0.9; }
-
-        .badges-container { display: flex; gap: 20px; width: 100%;}
-        .tall-badge { background: white; width: 150px; height: 160px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 25px 15px; box-sizing: border-box; transition: transform 0.2s, border-color 0.3s; border: 2px solid transparent;}
-        .tall-badge:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0,0,0,0.08); border-color: var(--primary-color); }
-        .badge-circle { background: var(--primary-grad); color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: 900; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); transition: 0.3s;}
-        .badge-label { font-size: 13px; font-weight: 800; color: var(--primary-color); text-transform: uppercase; text-align: center; letter-spacing: 0.5px; line-height: 1.3; transition: 0.3s;}
-
-        .header-right { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 5px;}
-        
-        /* --- CLEAN FLOATING AVATAR --- */
-        .header-user-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            flex-shrink: 0;
-            padding-top: 5px;
+        .right-sidebar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         }
-        .user-avatar { 
-            width: 65px; 
-            height: 65px; 
-            border-radius: 50%; 
-            background: var(--primary-grad); 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 24px; 
-            font-weight: bold; 
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); 
-            padding: 3px; 
-            box-sizing: border-box;
-            transition: transform 0.3s;
+    }
+
+    @media (max-width: 900px) {
+        .mock-stats-row {
+            grid-template-columns: repeat(2, 1fr);
         }
-        .user-avatar:hover {
-            transform: scale(1.05);
+    }
+
+    @media (max-width: 600px) {
+        .mock-stats-row {
+            grid-template-columns: 1fr;
         }
-        .user-avatar img {
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            border-radius: 50%; 
-            border: 3px solid var(--bg-color); 
-            box-sizing: border-box;
+        .folder-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
-        .header-role-text {
-            font-weight: 800;
-            color: #666;
-            font-size: 13px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        
-        .user-name { font-weight: 700; color: #666; font-size: 18px; text-transform: capitalize; letter-spacing: 0.5px;}
+    }
+</style>
+{% endblock %}
 
-        .category-grid { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 50px; 
-            margin-bottom: auto; 
-            margin-top: 10px; 
-        }
-
-        .category-card { background: white; width: 100%; padding: 40px 20px; border-radius: 15px; text-align: center; font-size: 15px; font-weight: 800; color: var(--text-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.3s; text-transform: uppercase; height: 130%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; letter-spacing: 1px; border-bottom: 4px solid transparent;}
-        .card-link { text-decoration: none; display: block; }
-        .category-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); border-bottom-color: var(--primary-color); }
-        .add-card { font-size: 18px; color: #999; background: transparent; border: 2px dashed #ccc; box-shadow: none; border-bottom: 2px dashed #ccc;}
-        .add-card:hover { background: white; border: 2px dashed var(--primary-color); color: var(--primary-color); }
-
-        .page-footer { text-align: center; color: #aaa; font-size: 12px; padding-top: 40px; padding-bottom: 10px; }
-
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; max-width: 90%; }
-        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
-        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
-        .form-group label { font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
-        .form-group input { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit;}
-        .submit-btn { background: var(--primary-grad); color: white; padding: 12px; border: none; border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
-
-        /* ========================================= */
-        /* --- THE MAGIC MOBILE CSS              --- */
-        /* ========================================= */
-        .mobile-header { display: none; }
-        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; backdrop-filter: blur(2px);}
-
-        @media (max-width: 1200px) {
-            .category-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
-            .company-search-stack { width: 300px; }
-        }
-
-        @media (max-width: 850px) {
-            body { flex-direction: column; height: auto; overflow-y: auto;}
-            
-            .sidebar { position: fixed; left: -300px; top: 0; height: 100vh; border-radius: 0; box-shadow: none; z-index: 999; }
-            .sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
-            .sidebar-overlay.active { display: block; }
-
-            .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-            .hamburger-btn { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; gap: 8px; align-items: center;}
-            
-            /* Style the avatar perfectly for the mobile header */
-            .mobile-header .header-user-block { flex-direction: column; gap: 2px; padding: 0; margin: 0; }
-            .mobile-header .user-avatar { width: 45px; height: 45px; border-width: 2px;}
-            .mobile-header .header-role-text { font-size: 11px; }
-            
-            .main-content { padding: 20px; width: 100%; box-sizing: border-box; }
-            
-            /* HIDE THE DUPLICATE DESKTOP AVATAR ON MOBILE */
-            .top-header .header-user-block { display: none; }
-            
-            .top-header { flex-direction: column; margin-bottom: 30px; }
-            .header-left-cluster { flex-direction: column; gap: 15px; width: 100%; }
-            .company-search-stack { width: 100%; }
-            .company-card { height: 120px; padding: 0 20px;}
-            
-            .badges-container { justify-content: space-between; gap: 10px; width: 100%;}
-            .tall-badge { width: 32%; height: 120px; padding: 15px 5px; }
-            .badge-circle { width: 40px; height: 40px; font-size: 16px; }
-            .badge-label { font-size: 10px; letter-spacing: 0; }
-            
-            .category-grid { grid-template-columns: repeat(2, 1fr); gap: 15px;}
-            .category-card { height: auto; min-height: 120px; } 
-        }
-        
-        @media (max-width: 480px) {
-            .category-grid { grid-template-columns: repeat(1, 1fr); }
-        }
-    </style>
-
-    <script>
-        (function() {
-            const theme = "{{ request.user.profile.theme|default:'default' }}";
-            const root = document.documentElement;
-            if (theme === 'midnight') { root.style.setProperty('--primary-color', '#1e293b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #1e293b, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #1e293b)'); } 
-            else if (theme === 'emerald') { root.style.setProperty('--primary-color', '#10b981'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #10b981, #34d399)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #064e3b, #047857)'); } 
-            else if (theme === 'ocean') { root.style.setProperty('--primary-color', '#0ea5e9'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0ea5e9, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0c4a6e, #0369a1)'); } 
-            else if (theme === 'amethyst') { root.style.setProperty('--primary-color', '#8b5cf6'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8b5cf6, #a78bfa)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2e1065, #4c1d95)'); } 
-            else if (theme === 'charcoal') { root.style.setProperty('--primary-color', '#0f172a'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0f172a, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #020617, #0f172a)'); } 
-            else if (theme === 'sunset') { root.style.setProperty('--primary-color', '#ea580c'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #ea580c, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #7c2d12, #ea580c)'); }
-            else if (theme === 'cyberpunk') { root.style.setProperty('--primary-color', '#d946ef'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #d946ef, #ec4899)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #4a044e, #701a75)'); }
-            else if (theme === 'graphite') { root.style.setProperty('--primary-color', '#475569'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #475569, #64748b)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #334155)'); }
-            else if (theme === 'rosegold') { root.style.setProperty('--primary-color', '#e11d48'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #e11d48, #fb7185)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #881337, #be123c)'); }
-            else if (theme === 'deeproyal') { root.style.setProperty('--primary-color', '#4338ca'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #4338ca, #6366f1)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #1e1b4b, #312e81)'); }
-            else if (theme === 'twilight') { root.style.setProperty('--primary-color', '#7e22ce'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #7e22ce, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #3b0764, #7e22ce)'); }
-            else if (theme === 'crimson') { root.style.setProperty('--primary-color', '#991b1b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #991b1b, #ef4444)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #450a0a, #7f1d1d)'); }
-            else if (theme === 'forest') { root.style.setProperty('--primary-color', '#15803d'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #15803d, #22c55e)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #052e16, #14532d)'); }
-            else if (theme === 'mocha') { root.style.setProperty('--primary-color', '#b45309'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #b45309, #d97706)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #451a03, #78350f)'); }
-            else if (theme === 'glacier') { root.style.setProperty('--primary-color', '#0284c7'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0284c7, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #082f49, #0369a1)'); }
-            else { root.style.setProperty('--primary-color', '#8c253e'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8c253e, #b03050)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2b1055, #7597de)'); }
-        })();
-    </script>
-</head>
-<body>
-    <div class="mobile-header">
-        <button class="hamburger-btn" onclick="toggleSidebar()">☰ MENU</button>
-        <div class="header-user-block">
-            <div class="user-avatar">
-                {% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}">{% else %}{{ request.user.username|make_list|first|upper }}{% endif %}
-            </div>
-            <div class="header-role-text">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Main Left Dashboard Coordinates -->
+    <section class="dashboard-main">
+        <!-- Search bar exactly like mockup -->
+        <div class="dashboard-top">
+            <form action="{% url "global_search" %}" method="GET" class="search-bar-form">
+                <span class="search-icon" aria-hidden="true"></span>
+                <input type="text" name="q" required placeholder="Search documents, folders, and more...">
+                <span class="search-badge">⌘ K</span>
+            </form>
         </div>
-    </div>
 
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-    <div class="sidebar">
-        <h2 style="text-align:center; margin-bottom: 10px; letter-spacing: 2px;">C-MAP</h2>
-        <ul class="sidebar-menu">
-            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li style="background: rgba(255,255,255,0.2);">Dashboard</li></a>
-            
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-family: var(--font-display); font-size: 28px; font-weight: 900; color: var(--text-main); margin: 0;">Welcome back</h1>
+            </div>
             {% if request.user.is_superuser or request.session.admin_unlocked %}
-                <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
-            {% else %}
-                <a href="#" onclick="openUnlockModal('{% url 'company_profile' %}')" style="text-decoration: none; color: white;"><li>Company <span style="float:right; opacity:0.5;">🔒</span></li></a>
+                <button class="btn" style="border-radius: 12px; font-size: 13px; font-family: var(--font-display); padding: 10px 18px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; background: var(--primary); box-shadow: 0 4px 12px var(--primary-glow);" onclick="openModal('addCategoryModal')">
+                    <svg width="16" height="16" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+                        <path d="M4 14C4 10.6863 6.68629 8 10 8H36C38.6534 8 41.1118 9.41243 42.441 11.7132L45.559 17.1132C46.2236 18.2636 47.4528 18.97 48.779 18.97H90C93.3137 18.97 96 21.6563 96 24.97V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V14Z" fill="#ffffff" opacity="0.8" />
+                        <path d="M4 25.5C4 22.1863 6.68629 19.5 10 19.5H90C93.3137 19.5 96 22.1863 96 25.5V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V25.5Z" fill="#ffffff" />
+                    </svg>
+                    <span>New Folder</span>
+                </button>
             {% endif %}
-            
-            <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
-            
-            {% if request.user.is_superuser or request.session.admin_unlocked %}
-                <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
-            {% else %}
-                <a href="#" onclick="openUnlockModal('{% url 'settings' %}')" style="text-decoration: none; color: white;"><li>Settings <span style="float:right; opacity:0.5;">🔒</span></li></a>
-            {% endif %}
-            
-            <a href="#" onclick="openModal('logoutModal')" style="text-decoration: none; color: white;">
-                <li>Logout</li>
-            </a>
-            
-</a>
-        </ul>
-        <div class="sidebar-footer">
-            <p style="margin:0; font-weight:bold;">Powered by C-MAP Core</p>
-            <p style="margin:5px 0 0 0;">Version 1.0 | Enterprise</p>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="top-header">
-            <div class="header-left-cluster">
-                <div class="company-search-stack">
-                    <div class="company-card">
-                        {% if company %}
-                            <div class="company-name">{{ company.name }}</div>
-                            <div class="company-details">
-                                {% if company.district %}{{ company.district }}, {% endif %}{{ company.country|default:"Location Setup Pending" }}<br>
-                                {% if company.contact_number %}{{ company.contact_number }} | {% endif %}{{ company.email_address|default:"Email Pending" }}
-                            </div>
-                        {% else %}
-                            <div class="company-name">Setup Pending</div>
-                            <div class="company-details">Please complete wizard in Company tab</div>
-                        {% endif %}
-                    </div>
-                    <form action="{% url 'global_search' %}" method="GET" class="search-bar-form">
-                        <span style="font-size:18px; color: #888; margin-right: 5px; margin-left: 10px;">🔍</span>
-                        <input type="text" name="q" required placeholder="Search...">
-                        <button type="submit">Search</button>
-                    </form>
-                </div>
-                <div class="badges-container">
-                    <a href="{% url 'filtered_documents' 'expired' %}" style="text-decoration:none; width: 100%;">
-                        <div class="tall-badge" style="width: 100%;">
-                            <div class="badge-circle">{{ expired }}</div>
-                            <div class="badge-label">Already<br>Expired</div>
-                        </div>
-                    </a>
-                    <a href="{% url 'filtered_documents' 'expire_soon' %}" style="text-decoration:none; width: 100%;">
-                        <div class="tall-badge" style="width: 100%;">
-                            <div class="badge-circle">{{ expire_soon }}</div>
-                            <div class="badge-label">Expire<br>Soon</div>
-                        </div>
-                    </a>
-                    <a href="{% url 'filtered_documents' 'recent' %}" style="text-decoration:none; width: 100%;">
-                        <div class="tall-badge" style="width: 100%;">
-                            <div class="badge-circle">{{ updated_today }}</div>
-                            <div class="badge-label">Recent<br>Updates</div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="header-user-block">
-                <div class="user-avatar">
-                    {% if request.user.profile.avatar %}
-                        <img src="{{ request.user.profile.avatar.url }}">
-                    {% else %}
-                        {{ request.user.username|make_list|first|upper }}
-                    {% endif %}
-                </div>
-                <div class="header-role-text">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
-            </div>
-            
         </div>
 
-        <div class="category-grid">
+        <!-- 4 Stat Cards side-by-side -->
+        <div class="mock-stats-row">
+            <div class="stat-card">
+                <div class="stat-icon-circle" style="background: var(--primary-soft); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                    <svg width="22" height="22" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 14C4 10.6863 6.68629 8 10 8H36C38.6534 8 41.1118 9.41243 42.441 11.7132L45.559 17.1132C46.2236 18.2636 47.4528 18.97 48.779 18.97H90C93.3137 18.97 96 21.6563 96 24.97V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V14Z" fill="var(--primary)" opacity="0.8" />
+                        <rect x="14" y="15" width="72" height="48" rx="6" fill="#ffffff" opacity="0.9" />
+                        <path d="M4 25.5C4 22.1863 6.68629 19.5 10 19.5H90C93.3137 19.5 96 22.1863 96 25.5V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V25.5Z" fill="var(--primary)" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-label">Total Folders</div>
+                    <div class="stat-number">{{ total_folders }}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-circle" style="background: rgba(3, 105, 161, 0.08); color: #0369a1; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-label">Total Documents</div>
+                    <div class="stat-number">{{ total_documents }}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-circle" style="background: rgba(34, 184, 168, 0.08); color: #22b8a8; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-label">Active Documents</div>
+                    <div class="stat-number">{{ active_documents }}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon-circle" style="background: rgba(245, 158, 11, 0.08); color: #f59e0b; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="stat-label">Expiring Soon</div>
+                    <div class="stat-number">{{ expire_soon }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layered 3D-ish Folders Grid -->
+        <div class="folder-grid">
             {% for cat in categories %}
-                <a href="{% url 'category_detail' cat.id %}" class="card-link">
-                    <div class="category-card">{{ cat.name }}</div>
+                {% cycle '1' '2' '3' as idx silent %}
+                <a href="{% url "category_detail" cat.id %}">
+                    <div class="folder-card folder-theme-{{ idx }}">
+                        <div class="folder-body-wrapper">
+                            <svg class="folder-svg-icon" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 14C4 10.6863 6.68629 8 10 8H36C38.6534 8 41.1118 9.41243 42.441 11.7132L45.559 17.1132C46.2236 18.2636 47.4528 18.97 48.779 18.97H90C93.3137 18.97 96 21.6563 96 24.97V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V14Z" fill="var(--f-color-start)" />
+                                <rect x="14" y="15" width="72" height="48" rx="6" fill="#ffffff" opacity="0.9"/>
+                                <line x1="24" y1="26" x2="76" y2="26" stroke="var(--text-muted)" stroke-width="2.5" opacity="0.15" />
+                                <line x1="24" y1="35" x2="62" y2="35" stroke="var(--text-muted)" stroke-width="2.5" opacity="0.15" />
+                                <line x1="24" y1="44" x2="70" y2="44" stroke="var(--text-muted)" stroke-width="2.5" opacity="0.15" />
+                                <path d="M4 25.5C4 22.1863 6.68629 19.5 10 19.5H90C93.3137 19.5 96 22.1863 96 25.5V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V25.5Z" fill="url(#frontCoverGrad-{{ idx }})" />
+                                <path d="M10 20.5H90C92.7614 20.5 95 22.7386 95 25.5V26.5C95 23.7386 92.7614 21.5 90 21.5H10C7.23858 21.5 5 23.7386 5 25.5V24.5C5 22.7386 7.23858 20.5 10 20.5Z" fill="#ffffff" opacity="0.25"/>
+                                <defs>
+                                    <linearGradient id="frontCoverGrad-{{ idx }}" x1="50" y1="20" x2="50" y2="76" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="var(--f-color-light)"/>
+                                        <stop offset="100%" stop-color="var(--f-color-start)"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <span class="folder-label-text">{{ cat.name|upper }}</span>
+                        </div>
+                    </div>
                 </a>
             {% endfor %}
+            
             {% if request.user.is_superuser or request.session.admin_unlocked %}
-                <div class="category-card add-card" onclick="openModal('addCategoryModal')">ADD +</div>
+                <div class="folder-card folder-theme-add" onclick="openModal('addCategoryModal')">
+                    <div class="folder-body-wrapper">
+                        <svg class="folder-svg-icon" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 14C4 10.6863 6.68629 8 10 8H36C38.6534 8 41.1118 9.41243 42.441 11.7132L45.559 17.1132C46.2236 18.2636 47.4528 18.97 48.779 18.97H90C93.3137 18.97 96 21.6563 96 24.97V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V14Z" fill="var(--f-color-start)" />
+                            <rect x="14" y="15" width="72" height="48" rx="6" fill="#ffffff" opacity="0.9"/>
+                            <line x1="24" y1="26" x2="76" y2="26" stroke="var(--text-muted)" stroke-width="2.5" opacity="0.15" />
+                            <line x1="24" y1="35" x2="62" y2="35" stroke="var(--text-muted)" stroke-width="2.5" opacity="0.15" />
+                            <path d="M4 25.5C4 22.1863 6.68629 19.5 10 19.5H90C93.3137 19.5 96 22.1863 96 25.5V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V25.5Z" fill="url(#frontCoverGrad-add)" />
+                            <path d="M10 20.5H90C92.7614 20.5 95 22.7386 95 25.5V26.5C95 23.7386 92.7614 21.5 90 21.5H10C7.23858 21.5 5 23.7386 5 25.5V24.5C5 22.7386 7.23858 20.5 10 20.5Z" fill="#ffffff" opacity="0.25"/>
+                            <defs>
+                                <linearGradient id="frontCoverGrad-add" x1="50" y1="20" x2="50" y2="76" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="var(--f-color-light)"/>
+                                    <stop offset="100%" stop-color="var(--f-color-start)"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <span class="folder-label-text" style="font-size: 28px; bottom: 22px;">+</span>
+                    </div>
+                </div>
             {% endif %}
         </div>
 
-        <div class="page-footer">&copy; 2026 C-MAP Management Systems. All rights reserved.</div>
-    </div>
-
-    <div class="modal-overlay" id="addCategoryModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('addCategoryModal')">&times;</span>
-            <h2 style="margin-top: 0; color: var(--primary-color);">New Main Folder</h2>
-            <form method="POST" action="{% url 'add_category' %}">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label>Folder Name</label>
-                    <input type="text" name="category_name" required placeholder="e.g., Licenses, Projects, etc.">
-                </div>
-                <button type="submit" class="submit-btn">Create Folder</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="logoutModal">
-        <div class="modal-content" style="width: 420px; text-align: center;">
-            <h2 style="color: var(--primary-color); margin-top:0;">System Exit</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 25px; line-height: 1.5;">
-                What would you like to do? You can log out of your account or completely shut down the core server.
-            </p>
-            
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                
-                <a href="{% url 'custom_logout' %}" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                        <span>🔒</span> Log Out Account
-                    </div>
-                    <span style="font-size: 11px; font-weight: normal; color: #166534;">Keeps the server running for mobile users</span>
-                </a>
-                
-                <a href="{% url 'shutdown_server' %}" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                        <span>🔌</span> Power Off Server
-                    </div>
-                    <span style="font-size: 11px; font-weight: normal; color: #991b1b;">Kills the server and disconnects everyone</span>
-                </a>
-                
-                <button class="submit-btn" style="background: #f3f4f6; color: #4b5563; margin-top: 10px; box-shadow: none; border: 1px solid #e5e7eb;" onclick="closeModal('logoutModal')">Cancel</button>
+        <!-- Recent Activities Table -->
+        <div class="recent-table-card">
+            <div class="recent-table-title">
+                <span>Recent Activities</span>
+                <span class="premium-badge" onclick="window.location.href='{% url "history_log" %}'">View All</span>
+            </div>
+            <div class="table-container">
+                <table class="mockup-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Documents</th>
+                            <th>Last Modified</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_activities %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    {% cycle 'var(--primary)' 'var(--accent-pink)' 'var(--accent-cyan)' as folder_item_color silent %}
+                                    <svg width="24" height="24" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06));">
+                                        <path d="M4 14C4 10.6863 6.68629 8 10 8H36C38.6534 8 41.1118 9.41243 42.441 11.7132L45.559 17.1132C46.2236 18.2636 47.4528 18.97 48.779 18.97H90C93.3137 18.97 96 21.6563 96 24.97V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V14Z" fill="{{ folder_item_color }}" opacity="0.8" />
+                                        <rect x="14" y="15" width="72" height="48" rx="6" fill="#ffffff" opacity="0.9" />
+                                        <path d="M4 25.5C4 22.1863 6.68629 19.5 10 19.5H90C93.3137 19.5 96 22.1863 96 25.5V70C96 73.3137 93.3137 76 90 76H10C6.68629 76 4 73.3137 4 70V25.5Z" fill="{{ folder_item_color }}" />
+                                    </svg>
+                                    <div>
+                                        <div style="font-weight: 800; color: var(--text-main);">{{ item.name }}</div>
+                                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px;">{{ item.description }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-weight: 800; font-family: var(--font-display); font-size: 15px;">{{ item.doc_count }}</div>
+                            </td>
+                            <td>
+                                {% if item.last_modified %}
+                                    <div style="font-weight: 800; color: var(--text-main);">{{ item.last_modified|date:"M d, Y" }}</div>
+                                    <div style="font-size: 11px; color: var(--text-light); font-weight: 700; margin-top: 2px;">{{ item.last_modified|date:"h:i A" }}</div>
+                                {% else %}
+                                    <div style="color: var(--text-light); font-style: italic; font-weight: 600;">No changes yet</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge-capsule {% if item.status == 'Active' %}badge-active{% else %}badge-attention{% endif %}">
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-size: 18px; color: var(--text-light); cursor: pointer; user-select: none;">⋮</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-light); padding: 30px; font-weight: 600;">
+                                No folder activities recorded.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="modal-overlay" id="unlockModal">
-        <div class="modal-content" style="width: 350px;">
-            <span class="close-modal" onclick="closeModal('unlockModal')">&times;</span>
-            <h2 style="margin-top: 0; color: var(--primary-color);">🔒 Admin Override</h2>
-            <p style="font-size: 13px; color: #666;">Enter administrator credentials to unlock this feature for the current session.</p>
-            <form method="POST" action="{% url 'admin_unlock' %}">
-                {% csrf_token %}
-                <input type="hidden" name="next_url" id="nextUrlInput">
-                <div class="form-group"><input type="text" name="admin_username" required placeholder="Admin Username"></div>
-                <div class="form-group"><input type="password" name="admin_password" required placeholder="Admin Password"></div>
-                <button type="submit" class="submit-btn">Unlock Feature</button>
-            </form>
+    <!-- Right Sidebar Coordinates -->
+    <aside class="right-sidebar">
+        <!-- Mockup Admin Profile Card -->
+        <div class="premium-card" style="padding-bottom: 12px;">
+            <div class="profile-banner"></div>
+            <div class="profile-avatar-wrapper {% if request.user.profile.avatar %}has-image{% endif %}">
+                {% if request.user.profile.avatar %}
+                    <img src="{{ request.user.profile.avatar.url }}" alt="">
+                {% else %}
+                    {{ request.user.username|make_list|first|upper }}
+                {% endif %}
+            </div>
+            <h2 class="profile-name">
+                <span>{{ request.user.username|title }}</span>
+                <span class="verified-badge" title="Verified system access">✓</span>
+            </h2>
+            <p class="profile-role">
+                {% if request.user.is_superuser %}System Administrator{% else %}Standard Staff{% endif %}
+            </p>
+            <p class="profile-email">
+                {{ request.user.email|default:"No email configured" }}
+            </p>
+            <div style="padding: 0 20px;">
+                <a href="{% url 'user_settings' %}" class="btn btn-secondary" style="width: 100%; text-align: center; border-radius: 12px; font-size: 13px; padding: 10px 14px; font-weight: 800; display: block; box-sizing: border-box; box-shadow: none;">
+                    Edit Profile
+                </a>
+            </div>
         </div>
+
+        <!-- Donut Document Analytics -->
+        <div class="premium-card" style="padding: 16px 20px;">
+            <h3 style="margin: 0 0 12px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                Document Analytics
+            </h3>
+            
+            <div class="donut-chart">
+                <div class="donut-chart-text">
+                    <div class="donut-chart-num">{{ total_documents }}</div>
+                    <div class="donut-chart-label">Total</div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 15px;">
+                <div class="breakdown-row">
+                    <div class="breakdown-left">
+                        <span class="breakdown-dot" style="background: #6366f1;"></span>
+                        <span>Expired</span>
+                    </div>
+                    <div>{{ expired }} ({{ expired_pct }}%)</div>
+                </div>
+                <div class="breakdown-row">
+                    <div class="breakdown-left">
+                        <span class="breakdown-dot" style="background: #ec4899;"></span>
+                        <span>Expire Soon</span>
+                    </div>
+                    <div>{{ expire_soon }} ({{ soon_pct }}%)</div>
+                </div>
+                <div class="breakdown-row">
+                    <div class="breakdown-left">
+                        <span class="breakdown-dot" style="background: #10b981;"></span>
+                        <span>Active</span>
+                    </div>
+                    <div>{{ active_documents }} ({{ active_pct }}%)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Overview Card -->
+        <div class="premium-card" style="padding: 16px 20px;">
+            <h3 style="margin: 0 0 10px; font-family: var(--font-display); font-size: 15px; font-weight: 800; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                Storage Overview
+            </h3>
+            <div style="display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 8px; font-size: 13px;">
+                <span style="color: var(--text-muted);">Used Capacity</span>
+                <span style="color: var(--text-main);">{{ storage_percentage }}%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 99px; overflow: hidden; margin-bottom: 6px;">
+                <div style="width: {{ storage_percentage }}%; height: 100%; background: var(--primary); border-radius: 99px;"></div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Modal popups for dashboard -->
+<div class="modal-overlay" id="addCategoryModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('addCategoryModal')">&times;</span>
+        <h2 style="margin: 0 0 8px; color: var(--text-main); font-size: 24px;">New Main Folder</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 20px;">Create a top-level category folder to organize documents.</p>
+        <form method="POST" action="{% url "add_category" %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Folder Name</label>
+                <input type="text" name="category_name" required placeholder="e.g. Visas, Vehicles, Trade Licenses">
+            </div>
+            <button type="submit" class="submit-btn" style="width: 100%;">Create Folder</button>
+        </form>
     </div>
-
-    <script>
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal-overlay')) { event.target.style.display = 'none'; }
-        });
-
-        function openUnlockModal(targetUrl) {
-            document.getElementById('nextUrlInput').value = targetUrl;
-            openModal('unlockModal');
-        }
-        
-        function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('active');
-            document.querySelector('.sidebar-overlay').classList.toggle('active');
-        }
-
-        let inactivityTimer;
-        const timeoutMilliseconds = {{ company.auto_logout_minutes|default:30 }} * 60 * 1000; 
-
-        function resetTimer() {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(function() {
-                window.location.href = "{% url 'custom_logout' %}";
-            }, timeoutMilliseconds);
-        }
-
-        window.onload = resetTimer;
-        document.onmousemove = resetTimer;
-        document.onkeypress = resetTimer;
-        document.onclick = resetTimer;
-        document.onscroll = resetTimer;
-        document.ontouchstart = resetTimer; 
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}

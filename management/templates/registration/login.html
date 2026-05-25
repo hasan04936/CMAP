@@ -2,189 +2,630 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#6b213b">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4d2aa0">
     <title>Login - C-MAP Enterprise</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        :root { 
-            --primary-color: #6b213b;
-            --primary-grad: linear-gradient(135deg, #6b213b, #9c304d); 
+        :root {
+            --primary: #4d2aa0;
+            --primary-glow: rgba(77, 42, 160, 0.35);
+            --pink: #f36ee7;
+            --pink-glow: rgba(243, 110, 231, 0.3);
+            --cyan: #6bdde4;
+            --cyan-glow: rgba(107, 221, 228, 0.3);
+            --bg-dark: #0a0715;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-light: #f3f0ff;
+            --text-dark: #120e24;
+            --text-muted: #6b6684;
+            --input-bg: #f5f4fc;
+            --input-border: rgba(77, 42, 160, 0.15);
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Nunito', sans-serif;
         }
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            display: flex; 
-            min-height: 100vh; 
-            background-color: #eef1f5; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        
-        .login-wrapper {
-            padding: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
+
+        * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        
-        .login-box { 
-            display: flex; 
-            width: 900px; 
-            max-width: 100%; 
-            height: 520px; 
-            background: white; 
-            border-radius: 30px; 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.1); 
-            overflow: hidden; 
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            font-family: var(--font-body);
+            color: var(--text-dark);
+            background: var(--bg-dark);
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
-        
-        .brand-side { 
-            flex: 1; 
-            background: var(--primary-grad); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 40px; 
-            text-align: center; 
+
+        /* Ambient Animated Blobs */
+        .ambient-blobs {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.55;
+            animation: drift 20s infinite alternate ease-in-out;
+        }
+
+        .blob-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--primary);
+            top: -10%;
+            left: -10%;
+            animation-duration: 25s;
+        }
+
+        .blob-2 {
+            width: 450px;
+            height: 450px;
+            background: var(--pink);
+            bottom: -5%;
+            right: -5%;
+            animation-duration: 22s;
+            animation-delay: -5s;
+        }
+
+        .blob-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--cyan);
+            top: 40%;
+            left: 50%;
+            animation-duration: 18s;
+            animation-delay: -10s;
+        }
+
+        @keyframes drift {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+            }
+            50% {
+                transform: translate(80px, 50px) scale(1.15) rotate(180deg);
+            }
+            100% {
+                transform: translate(-40px, -60px) scale(0.9) rotate(360deg);
+            }
+        }
+
+        /* Login Container Shell */
+        .login-shell {
+            position: relative;
+            z-index: 10;
+            width: min(1080px, 100%);
+            min-height: 660px;
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 36px;
+            box-shadow: 
+                0 30px 70px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        /* Left Brand Panel */
+        .brand-panel {
+            position: relative;
+            background: linear-gradient(145deg, rgba(31, 21, 56, 0.95) 0%, rgba(13, 8, 28, 0.98) 100%);
+            padding: 50px 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(243, 110, 231, 0.12), transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(107, 221, 228, 0.1), transparent 40%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .brand-row {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-logo-container::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--pink), var(--primary));
+            border-radius: 16px;
+            filter: blur(8px);
+            opacity: 0.55;
+            z-index: -1;
+        }
+
+        .brand-mark {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--pink) 0%, var(--primary) 100%);
+            color: #ffffff;
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 900;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px rgba(77, 42, 160, 0.35);
+        }
+
+        .brand-logo-img {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px rgba(77, 42, 160, 0.3);
+        }
+
+        .brand-copy strong {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-light);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .brand-copy span {
+            display: block;
+            margin-top: 3px;
+            color: var(--cyan);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .brand-promo {
+            position: relative;
+            z-index: 5;
+            margin: 40px 0;
+        }
+
+        .brand-promo h1 {
+            font-family: var(--font-display);
+            font-size: 40px;
+            line-height: 1.15;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.03em;
+        }
+
+        .brand-promo h1 span {
+            display: block;
+            background: linear-gradient(135deg, #ffffff 30%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-promo p {
+            margin-top: 20px;
+            color: #a49fc4;
+            font-size: 15px;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+
+        .brand-card {
+            position: relative;
+            z-index: 5;
+            padding: 24px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .brand-card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-light);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .brand-card-title svg {
+            width: 18px;
+            height: 18px;
+            color: var(--pink);
+        }
+
+        .brand-card small {
+            display: block;
+            color: #79749e;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Right Form Panel */
+        .form-panel {
+            background: #ffffff;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .form-wrapper {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-header {
+            margin-bottom: 35px;
+        }
+
+        .form-header h2 {
+            font-family: var(--font-display);
+            font-size: 34px;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+        }
+
+        .form-header p {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .error-msg {
+            margin-bottom: 24px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid rgba(220, 38, 38, 0.15);
+            font-size: 13.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.03);
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .form-group {
+            margin-bottom: 22px;
             position: relative;
         }
 
-        .top-spacer { margin-bottom: auto; }
-
-        .brand-side h1 { font-size: 45px; font-weight: 900; margin: 0; letter-spacing: 3px; text-shadow: 0 5px 15px rgba(0,0,0,0.2);}
-        .brand-side p { font-size: 15px; opacity: 0.85; margin-top: 10px; line-height: 1.6; }
-        
-        .bottom-branding {
-            margin-top: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .company-badge {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: bold;
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+            font-size: 12.5px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            backdrop-filter: blur(5px);
+            letter-spacing: 0.06em;
+            transition: color 0.2s ease;
         }
 
-        .brand-footer { font-size: 11px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px;}
-        
-        .form-side { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: center; background: #ffffff;}
-        
-        .form-side h2 { color: var(--primary-color); margin-top: 0; font-size: 28px; margin-bottom: 30px; font-weight: 800; text-align: center;}
-        
-        .form-group { margin-bottom: 22px; }
-        .form-group label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
-        .form-group input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; font-size: 15px; box-sizing: border-box; transition: 0.3s; font-family: inherit; background: #fdfdfd;}
-        
-        .form-group input:focus { border-color: var(--primary-color); outline: none; background: #fff; box-shadow: 0 0 0 4px rgba(107, 33, 59, 0.1);}
-        
-        .submit-btn { background: var(--primary-grad); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; box-shadow: 0 10px 20px rgba(107, 33, 59, 0.2);}
-        .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(107, 33, 59, 0.3); }
-        
-        .error-msg { color: #dc2626; font-size: 13px; font-weight: bold; margin-bottom: 25px; text-align: center; background: #fef2f2; padding: 12px; border-radius: 10px; border: 1px solid #fecaca;}
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
 
-        /* ========================================= */
-        /* --- HIGH-END MOBILE RESPONSIVENESS    --- */
-        /* ========================================= */
-        @media (max-width: 850px) {
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            color: var(--text-muted);
+            pointer-events: none;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .form-group input {
+            width: 100%;
+            min-height: 56px;
+            padding: 12px 16px 12px 48px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 18px;
+            color: var(--text-dark);
+            background: var(--input-bg);
+            outline: none;
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-group input::placeholder {
+            color: #a4a0ba;
+            font-weight: 500;
+        }
+
+        .form-group input:hover {
+            border-color: rgba(77, 42, 160, 0.35);
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 
+                0 0 0 4px rgba(77, 42, 160, 0.12),
+                0 4px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .form-group input:focus + .input-icon {
+            color: var(--primary);
+        }
+
+        .form-group:focus-within label {
+            color: var(--primary);
+        }
+
+        .submit-btn {
+            width: 100%;
+            min-height: 56px;
+            border: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, #371b7a 100%);
+            color: #ffffff;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(77, 42, 160, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 16px 32px rgba(77, 42, 160, 0.4),
+                0 0 0 1px var(--primary);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 8px 16px rgba(77, 42, 160, 0.3);
+        }
+
+        .submit-btn svg {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.2s ease;
+        }
+
+        .submit-btn:hover svg {
+            transform: translateX(4px);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 900px) {
             body {
-                align-items: flex-start; /* Pushes content to the very top */
-                background-color: white; /* Blends the bottom of the screen with the form */
+                padding: 16px;
+                place-items: center;
             }
-            .login-wrapper {
-                padding: 0;
+
+            .login-shell {
+                grid-template-columns: 1fr;
+                min-height: auto;
+                border-radius: 28px;
             }
-            .login-box { 
-                flex-direction: column; 
-                height: 100vh; /* Fills the whole mobile screen natively */
-                border-radius: 0;
-                box-shadow: none;
+
+            .brand-panel {
+                padding: 40px 30px;
+                border-right: 0;
+                border-bottom: 1px solid var(--glass-border);
             }
-            .brand-side { 
-                flex: none; 
-                padding: 50px 20px 80px 20px; /* The 80px bottom padding gives space for the form to overlap */
+
+            .brand-promo {
+                margin: 30px 0;
             }
-            .top-spacer { 
-                display: none; 
+
+            .brand-promo h1 {
+                font-size: 32px;
             }
-            .bottom-branding {
-                margin-top: 25px;
+
+            .form-panel {
+                padding: 40px 30px;
             }
-            .brand-side h1 { 
-                font-size: 38px; 
+        }
+
+        @media (max-width: 480px) {
+            .brand-panel, .form-panel {
+                padding: 30px 20px;
             }
-            
-            /* The Magic Overlap Card */
-            .form-side { 
-                flex: 1;
-                padding: 40px 25px; 
-                background: white;
-                border-radius: 30px 30px 0 0; /* Curves only the top two corners */
-                margin-top: -40px; /* Pulls the white card UP over the maroon background */
-                box-shadow: 0 -10px 25px rgba(0,0,0,0.1); /* Casts a shadow UPWARDS */
-                justify-content: flex-start; /* Pushes the login form nicely to the top of the card */
+
+            .brand-promo h1 {
+                font-size: 28px;
             }
-            .form-side h2 {
-                font-size: 24px;
-                margin-bottom: 25px;
-                margin-top: 25px;
+
+            .form-header h2 {
+                font-size: 28px;
             }
+
+            .form-group input {
+                min-height: 52px;
+            }
+
             .submit-btn {
-                padding: 18px; /* Slightly thicker button for easier tapping on mobile */
-                font-size: 18px;
+                min-height: 52px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="login-wrapper">
-        <div class="login-box">
-            <div class="brand-side">
-                <div class="top-spacer"></div>
-                
-                <h1>C-MAP</h1>
-                <p>Corporate Management<br>Administration Portal</p>
-                
-                <div class="bottom-branding">
-                    <div class="company-badge">{{ company.name|default:"Grow Green Trading Co." }}</div>
-                    <div class="brand-footer">Secure Enterprise Environment</div>
+
+    <!-- Drifting Ambient Background Glows -->
+    <div class="ambient-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <main class="login-shell">
+        <!-- Left Brand Section -->
+        <section class="brand-panel">
+            <div class="brand-row">
+                <div class="brand-logo-container">
+                    {% if company.logo %}
+                        <img src="{{ company.logo.url }}" alt="{{ company.name }}" class="brand-logo-img">
+                    {% else %}
+                        <span class="brand-mark">C</span>
+                    {% endif %}
+                </div>
+                <div class="brand-copy">
+                    <strong>{{ company.name|default:"C-MAP" }}</strong>
+                    <span>Document System</span>
                 </div>
             </div>
-            
-            <div class="form-side">
-                <h2>Welcome Back</h2>
-                
+
+            <div class="brand-promo">
+                <h1>
+                    Beautiful document 
+                    <span>control workspace.</span>
+                </h1>
+                <p>Track files, custom meta metrics, active lifespans, and staff activity records through an elegant workspace tailored to your enterprise.</p>
+            </div>
+
+            <div class="brand-card">
+                <div class="brand-card-title">
+                    <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M2.166 4.9L10 9.554l7.834-4.654a1 1 0 00-.516-1.8H2.682a1 1 0 00-.516 1.8zM10 11.82L2 7.07V14.5a1.5 1.5 0 001.5 1.5h13a1.5 1.5 0 001.5-1.5V7.07l-8 4.75zm0-2.3z" clip-rule="evenodd"></path></svg>
+                    <span>{{ company.name|default:"Grow Green Trading Co." }}</span>
+                </div>
+                <small>Secure Encryption Standard Enabled</small>
+            </div>
+        </section>
+
+        <!-- Right Login Form Section -->
+        <section class="form-panel">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2>Welcome back</h2>
+                    <p>Enter your credentials to access the console</p>
+                </div>
+
                 {% if form.errors %}
-                    <div class="error-msg">Incorrect Username or Password. Please try again.</div>
+                    <div class="error-msg">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span>Incorrect username or password.</span>
+                    </div>
                 {% endif %}
 
                 <form method="POST" action="{% url 'login' %}">
                     {% csrf_token %}
+                    
                     <div class="form-group">
-                        <label>Admin Username</label>
-                        <input type="text" name="username" required autocomplete="username">
+                        <label for="username">Username</label>
+                        <div class="input-container">
+                            <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter username">
+                            <div class="input-icon">
+                                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label>Secure Password</label>
-                        <input type="password" name="password" required autocomplete="current-password">
+                        <label for="password">Password</label>
+                        <div class="input-container">
+                            <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+                            <div class="input-icon">
+                                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"></path>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" class="submit-btn">Access System</button>
+
+                    <button type="submit" class="submit-btn">
+                        <span>Access Workspace</span>
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path>
+                        </svg>
+                    </button>
                 </form>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
+
 </body>
 </html>

@@ -1,305 +1,153 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#eef1f5">
-    <title>{{ title }} - C-MAP</title>
-    <style>
-        :root {
-            --primary-color: #6b213b;
-            --primary-grad: linear-gradient(135deg, #6b213b, #9c304d);
-            --sidebar-grad: linear-gradient(180deg, #2b1055, #7597de);
-            --bg-color: #eef1f5; 
-            --text-dark: #222;
-        }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
-        
-        .sidebar { width: 250px; background: var(--sidebar-grad); color: white; padding: 20px; display: flex; flex-direction: column; border-top-right-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); z-index: 1000; transition: 0.3s; flex-shrink: 0; }
-        .sidebar-menu { list-style: none; padding: 0; margin-top: 40px; flex-grow: 1; }
-        .sidebar-menu li { padding: 15px 20px; margin-bottom: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .sidebar-menu li:hover { background: rgba(255,255,255,0.2); }
-        .sidebar-footer { margin-top: auto; text-align: center; font-size: 11px; color: rgba(255,255,255,0.6); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+{% extends 'management/base.html' %}
 
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px 50px; }
-        
-        .top-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; width: 100%;}
-        .header-left-cluster { display: flex; gap: 20px; align-items: center; }
-        
-        .back-btn { background: white; color: var(--text-dark); padding: 12px 25px; border-radius: 15px; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.2s; display: flex; align-items: center;}
-        .back-btn:hover { background: #e0e0e0; }
-        .page-title-box { background: var(--primary-grad); color: white; padding: 12px 30px; border-radius: 15px; font-size: 16px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(0,0,0,0.15); margin: 0; }
+{% block title %}{{ title }} | C-MAP{% endblock %}
 
-        /* --- CLEAN FLOATING AVATAR --- */
-        .header-user-block { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 5px; }
-        .user-avatar { width: 65px; height: 65px; border-radius: 50%; background: var(--primary-grad); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); padding: 3px; box-sizing: border-box; transition: transform 0.3s; }
-        .user-avatar:hover { transform: scale(1.05); }
-        .user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 3px solid var(--bg-color); box-sizing: border-box; }
-        .header-role-text { font-weight: 800; color: #666; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+{% block extra_head %}
+<style>
+    .doc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 25px;
+        margin-top: 20px;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-        /* Bubbly Document Cards */
-        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; margin-top: 20px;}
-        .doc-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-left: 6px solid var(--primary-color); transition: transform 0.2s; }
-        .doc-card:hover { transform: translateY(-5px); }
-        .card-header-dynamic { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #f4f5f7; }
-        .card-body-dynamic { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        
-        .action-btn { padding: 12px 15px; border-radius: 12px; border: 1px solid #ddd; background: #fdfdfd; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; text-align: center; color: #333; transition: 0.2s; margin-top: auto;}
-        .action-btn:hover { background: #eee; }
+    .doc-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-color);
+        padding: 25px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        border-left: 6px solid var(--primary);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
 
-        /* Unified Modals */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 400px; max-width: 90%; box-shadow: 0 15px 30px rgba(0,0,0,0.2); position: relative; }
-        .close-modal { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
-        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
-        .form-group label { font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #444; }
-        .form-group input { padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit;}
-        .submit-btn { background: var(--primary-grad); color: white; padding: 12px; border: none; border-radius: 10px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;}
+    .doc-card:hover {
+        transform: translateY(-6px) scale(1.015);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08), 0 0 25px var(--primary-glow);
+        background: var(--bg-card);
+        border-color: var(--primary);
+    }
 
-        /* --- FLOATING TOAST NOTIFICATIONS --- */
-        .toast-container { position: fixed; top: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; pointer-events: none;}
-        .toast { background: white; border-left: 6px solid #10b981; padding: 18px 25px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); font-weight: 800; color: #333; display: flex; align-items: center; gap: 12px; font-size: 15px; animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transition: opacity 0.5s ease, transform 0.5s ease;}
-        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .card-header-dynamic {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
 
-        /* ========================================= */
-        /* --- THE MAGIC MOBILE CSS              --- */
-        /* ========================================= */
-        .mobile-header { display: none; }
-        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; backdrop-filter: blur(2px);}
+    .card-body-dynamic {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
 
-        @media (max-width: 1200px) {
-            .doc-grid { grid-template-columns: repeat(2, 1fr); } 
-        }
+    .action-btn {
+        padding: 12px 15px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: var(--font-display);
+        width: 100%;
+        text-align: center;
+        color: var(--text-main);
+        transition: var(--transition);
+        margin-top: auto;
+    }
 
-        @media (max-width: 850px) {
-            body { flex-direction: column; height: auto; overflow-y: auto;}
-            
-            .sidebar { position: fixed; left: -300px; top: 0; height: 100vh; border-radius: 0; box-shadow: none; z-index: 999; }
-            .sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
-            .sidebar-overlay.active { display: block; }
+    .action-btn:hover {
+        background: var(--primary-grad);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px var(--primary-glow);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
 
-            .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-            .hamburger-btn { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; gap: 8px; align-items: center;}
-            
-            .mobile-header .header-user-block { flex-direction: column; gap: 2px; padding: 0; margin: 0; }
-            .mobile-header .user-avatar { width: 45px; height: 45px; border-width: 2px;}
-            .mobile-header .header-role-text { font-size: 11px; }
-            
-            .main-content { padding: 20px; width: 100%; box-sizing: border-box; }
-            
-            /* HIDE THE DUPLICATE DESKTOP AVATAR ON MOBILE */
-            .top-header .header-user-block { display: none; }
-            
-            .top-header { flex-direction: column; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
-            .header-left-cluster { flex-direction: column; gap: 15px; width: 100%; align-items: flex-start;}
-            
-            .doc-grid { grid-template-columns: 1fr; } /* Stacks cards in 1 column */
-        }
-    </style>
-
-    <script>
-        (function() {
-            const theme = "{{ request.user.profile.theme|default:'default' }}";
-            const root = document.documentElement;
-            if (theme === 'midnight') { root.style.setProperty('--primary-color', '#1e293b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #1e293b, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #1e293b)'); } 
-            else if (theme === 'emerald') { root.style.setProperty('--primary-color', '#10b981'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #10b981, #34d399)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #064e3b, #047857)'); } 
-            else if (theme === 'ocean') { root.style.setProperty('--primary-color', '#0ea5e9'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0ea5e9, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0c4a6e, #0369a1)'); } 
-            else if (theme === 'amethyst') { root.style.setProperty('--primary-color', '#8b5cf6'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8b5cf6, #a78bfa)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2e1065, #4c1d95)'); } 
-            else if (theme === 'charcoal') { root.style.setProperty('--primary-color', '#0f172a'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0f172a, #334155)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #020617, #0f172a)'); } 
-            else if (theme === 'sunset') { root.style.setProperty('--primary-color', '#ea580c'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #ea580c, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #7c2d12, #ea580c)'); }
-            else if (theme === 'cyberpunk') { root.style.setProperty('--primary-color', '#d946ef'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #d946ef, #ec4899)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #4a044e, #701a75)'); }
-            else if (theme === 'graphite') { root.style.setProperty('--primary-color', '#475569'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #475569, #64748b)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #0f172a, #334155)'); }
-            else if (theme === 'rosegold') { root.style.setProperty('--primary-color', '#e11d48'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #e11d48, #fb7185)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #881337, #be123c)'); }
-            else if (theme === 'deeproyal') { root.style.setProperty('--primary-color', '#4338ca'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #4338ca, #6366f1)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #1e1b4b, #312e81)'); }
-            else if (theme === 'twilight') { root.style.setProperty('--primary-color', '#7e22ce'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #7e22ce, #f97316)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #3b0764, #7e22ce)'); }
-            else if (theme === 'crimson') { root.style.setProperty('--primary-color', '#991b1b'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #991b1b, #ef4444)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #450a0a, #7f1d1d)'); }
-            else if (theme === 'forest') { root.style.setProperty('--primary-color', '#15803d'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #15803d, #22c55e)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #052e16, #14532d)'); }
-            else if (theme === 'mocha') { root.style.setProperty('--primary-color', '#b45309'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #b45309, #d97706)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #451a03, #78350f)'); }
-            else if (theme === 'glacier') { root.style.setProperty('--primary-color', '#0284c7'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #0284c7, #38bdf8)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #082f49, #0369a1)'); }
-            else { root.style.setProperty('--primary-color', '#8c253e'); root.style.setProperty('--primary-grad', 'linear-gradient(135deg, #8c253e, #b03050)'); root.style.setProperty('--sidebar-grad', 'linear-gradient(180deg, #2b1055, #7597de)'); }
-        })();
-    </script>
-</head>
-<body>
-
-    <div class="mobile-header">
-        <button class="hamburger-btn" onclick="toggleSidebar()">☰ MENU</button>
-        <div class="header-user-block">
-            <div class="user-avatar">
-                {% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}">{% else %}{{ request.user.username|make_list|first|upper }}{% endif %}
-            </div>
-            <div class="header-role-text">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
-        </div>
+{% block content %}
+<div class="top-header">
+    <div class="header-left-cluster" style="align-items: center;">
+        <a href="{% url "dashboard" %}" class="btn btn-secondary" style="padding: 10px 20px;">
+            ← Dashboard
+        </a>
+        <h1 class="page-title" style="font-family: var(--font-display); font-weight: 900; font-size: 26px; letter-spacing: -0.02em; color: var(--text-main); text-transform: uppercase; margin: 0;">
+            {{ title }}
+        </h1>
     </div>
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-    {% if messages %}
-    <div class="toast-container" id="toastContainer">
-        {% for message in messages %}
-            <div class="toast {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    </div>
-    <script>
-        setTimeout(() => {
-            const toastContainer = document.getElementById('toastContainer');
-            if (toastContainer) {
-                toastContainer.style.opacity = '0';
-                toastContainer.style.transform = 'translateX(100%)';
-                setTimeout(() => toastContainer.remove(), 500); 
-            }
-        }, 4000);
-    </script>
-    {% endif %}
-
-    <div class="sidebar">
-        <h2 style="text-align:center; margin-bottom: 10px; letter-spacing: 2px;">C-MAP</h2>
-        <ul class="sidebar-menu">
-            <a href="{% url 'dashboard' %}" style="text-decoration: none; color: white;"><li>Dashboard</li></a>
-            
-            {% if request.user.is_superuser or request.session.admin_unlocked %}
-                <a href="{% url 'company_profile' %}" style="text-decoration: none; color: white;"><li>Company</li></a>
+    
+    <div class="header-user-block">
+        <div class="user-avatar" onclick="window.location.href='{% url "settings" %}'">
+            {% if request.user.profile.avatar %}
+                <img src="{{ request.user.profile.avatar.url }}">
             {% else %}
-                <a href="#" onclick="openUnlockModal('{% url 'company_profile' %}')" style="text-decoration: none; color: white;"><li>Company <span style="float:right; opacity:0.5;">🔒</span></li></a>
+                {{ request.user.username|make_list|first|upper }}
             {% endif %}
-            
-            <a href="{% url 'history_log' %}" style="text-decoration: none; color: white;"><li>History</li></a>
-            
-            {% if request.user.is_superuser or request.session.admin_unlocked %}
-                <a href="{% url 'settings' %}" style="text-decoration: none; color: white;"><li>Settings</li></a>
-            {% else %}
-                <a href="#" onclick="openUnlockModal('{% url 'settings' %}')" style="text-decoration: none; color: white;"><li>Settings <span style="float:right; opacity:0.5;">🔒</span></li></a>
-            {% endif %}
-            
-            <a href="#" onclick="openModal('logoutModal')" style="text-decoration: none; color: white;"><li>Logout</li></a>
-        </ul>
-        <div class="sidebar-footer">
-            <p style="margin:0; font-weight:bold;">Powered by C-MAP Core</p>
-            <p style="margin:5px 0 0 0;">Version 1.0 | Enterprise</p>
         </div>
+        <div class="user-name">{{ request.user.username }}</div>
     </div>
+</div>
 
-    <div class="main-content">
-        <div class="top-header">
-            <div class="header-left-cluster">
-                <a href="{% url 'dashboard' %}" class="back-btn">← Dashboard</a>
-                <div class="page-title-box">{{ title }}</div>
+<h3 style="color: var(--text-muted); font-size: 14px; margin-top: 0; font-weight: 600; font-family: var(--font-sans);">
+    🔍 System Filter Results: Found {{ results|length }} document(s)
+</h3>
+
+<div class="doc-grid">
+    {% for doc in results %}
+        <div class="doc-card">
+            <div style="font-size: 10px; color: white; background: var(--primary-grad); padding: 6px 12px; border-radius: var(--radius-sm); margin-bottom: 16px; width: fit-content; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; font-family: var(--font-display); box-shadow: 0 2px 6px var(--primary-glow);">
+                📁 {{ doc.sub_category.category.name }} &rsaquo; {{ doc.sub_category.name }}
+            </div>
+
+            <!-- Dynamic Card Header using correct properties -->
+            <div class="card-header-dynamic">
+                {% with header=doc.card_header_value %}
+                    {% if header %}
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 800; font-family: var(--font-display);">{{ header.custom_field.field_name }}</div>
+                            <div style="font-size: 20px; font-weight: 900; color: var(--text-main); margin-top: 4px; font-family: var(--font-display); letter-spacing: -0.01em;">{{ header.value|default:"-" }}</div>
+                        </div>
+                    {% else %}
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 800; font-family: var(--font-display);">Title</div>
+                            <div style="font-size: 20px; font-weight: 900; color: var(--text-main); margin-top: 4px; font-family: var(--font-display); letter-spacing: -0.01em;">Unnamed Record</div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Dynamic Card Body using correct properties -->
+            <div class="card-body-dynamic">
+                {% for val in doc.card_body_values %}
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 800; font-family: var(--font-display);">{{ val.custom_field.field_name }}</div>
+                        <div style="font-size: 14px; font-weight: 700; margin-top: 4px; {% if 'expire' in val.custom_field.field_name|lower %}color: #ef4444;{% else %}color: var(--text-main);{% endif %}">
+                            {% if val.custom_field.field_type == 'file' and val.file_value %}📎 Attached{% else %}{{ val.value|default:"-" }}{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
             
-            <div class="header-user-block">
-                <div class="user-avatar">
-                    {% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}">{% else %}{{ request.user.username|make_list|first|upper }}{% endif %}
-                </div>
-                <div class="header-role-text">{% if request.user.is_superuser %}Admin{% else %}Staff{% endif %}</div>
-            </div>
+            <button class="action-btn" onclick="window.location.href='{% url "subcategory_detail" doc.sub_category.id %}'">📁 Open Folder Directory</button>
         </div>
-
-        <h3 style="color: #444; font-size: 15px; margin-top: 0;">Found {{ results|length }} document(s)</h3>
-
-        <div class="doc-grid">
-            {% for doc in results %}
-                <div class="doc-card">
-                    <div style="font-size: 10px; color: white; background: var(--primary-color); padding: 6px 12px; border-radius: 10px; margin-bottom: 15px; width: fit-content; font-weight: bold; letter-spacing: 0.5px;">
-                        📁 {{ doc.sub_category.category.name }} > {{ doc.sub_category.name }}
-                    </div>
-
-                    <div class="card-header-dynamic">
-                        {% for val in doc.custom_values.all %}
-                            {% if val.custom_field.show_on_card and forloop.first %}
-                                <div>
-                                    <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;">{{ val.custom_field.field_name }}</div>
-                                    <div style="font-size: 20px; font-weight: 900; color: #111; margin-top: 2px;">{{ val.value|default:"-" }}</div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-
-                    <div class="card-body-dynamic">
-                        {% for val in doc.custom_values.all %}
-                            {% if val.custom_field.show_on_card and not forloop.first %}
-                                <div>
-                                    <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;">{{ val.custom_field.field_name }}</div>
-                                    <div style="font-size: 14px; font-weight: bold; margin-top: 3px; {% if 'expire' in val.custom_field.field_name|lower %}color: #dc2626;{% else %}color: #333;{% endif %}">
-                                        {% if val.custom_field.field_type == 'file' and val.file_value %}📎 Attached{% else %}{{ val.value|default:"-" }}{% endif %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                    
-                    <button class="action-btn" onclick="window.location.href='{% url 'subcategory_detail' doc.sub_category.id %}'">Open Folder File</button>
-                </div>
-            {% empty %}
-                <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: white; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-                    <h2 style="color: #666; font-size: 20px; margin-bottom: 10px;">No documents found.</h2>
-                    <p style="color: #aaa; font-size: 14px; margin: 0;">There are no items currently matching this filter.</p>
-                </div>
-            {% endfor %}
+    {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <span style="font-size: 40px; display: block; margin-bottom: 15px;">📁</span>
+            <h2 style="color: var(--text-muted); font-family: var(--font-display); font-weight: 800; font-size: 20px;">No matching documents found.</h2>
+            <p style="color: var(--text-light); font-size: 13px; margin-top: 8px;">There are no items currently matching this visual filter.</p>
         </div>
-    </div>
-
-    <div class="modal-overlay" id="logoutModal">
-        <div class="modal-content" style="width: 420px; text-align: center;">
-            <h2 style="color: var(--primary-color); margin-top:0;">System Exit</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 25px; line-height: 1.5;">
-                What would you like to do? You can log out of your account or completely shut down the core server.
-            </p>
-            
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                
-                <a href="{% url 'custom_logout' %}" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                        <span>🔒</span> Log Out Account
-                    </div>
-                    <span style="font-size: 11px; font-weight: normal; color: #166534;">Keeps the server running for mobile users</span>
-                </a>
-                
-                <a href="{% url 'shutdown_server' %}" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 15px; border-radius: 12px; font-weight: bold; text-decoration: none; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 16px;">
-                        <span>🔌</span> Power Off Server
-                    </div>
-                    <span style="font-size: 11px; font-weight: normal; color: #991b1b;">Kills the server and disconnects everyone</span>
-                </a>
-                
-                <button class="submit-btn" style="background: #f3f4f6; color: #4b5563; margin-top: 10px; box-shadow: none; border: 1px solid #e5e7eb;" onclick="closeModal('logoutModal')">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="modal-overlay" id="unlockModal">
-        <div class="modal-content" style="width: 350px;">
-            <span class="close-modal" onclick="closeModal('unlockModal')">&times;</span>
-            <h2 style="margin-top: 0; color: var(--primary-color);">🔒 Admin Override</h2>
-            <p style="font-size: 13px; color: #666;">Enter administrator credentials to unlock this feature for the current session.</p>
-            <form method="POST" action="{% url 'admin_unlock' %}">
-                {% csrf_token %}
-                <input type="hidden" name="next_url" id="nextUrlInput">
-                <div class="form-group"><input type="text" name="admin_username" required placeholder="Admin Username"></div>
-                <div class="form-group"><input type="password" name="admin_password" required placeholder="Admin Password"></div>
-                <button type="submit" class="submit-btn">Unlock Feature</button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function openUnlockModal(targetUrl) { document.getElementById('nextUrlInput').value = targetUrl; openModal('unlockModal'); }
-        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal-overlay')) { event.target.style.display = 'none'; } });
-
-        let inactivityTimer;
-        const timeoutMilliseconds = {{ company.auto_logout_minutes|default:30 }} * 60 * 1000; 
-        function resetTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(function() { window.location.href = "{% url 'custom_logout' %}"; }, timeoutMilliseconds); }
-        window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer; document.onscroll = resetTimer; document.ontouchstart = resetTimer;
-
-        function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('active');
-            document.querySelector('.sidebar-overlay').classList.toggle('active');
-        }
-    </script>
-</body>
-</html>
+    {% endfor %}
+</div>
+{% endblock %}

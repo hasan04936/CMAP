@@ -1,44 +1,482 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#10b981">
     <title>System Setup - C-MAP</title>
+    
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg, #0f172a, #1e293b); height: 100vh; display: flex; justify-content: center; align-items: center; }
-        .wizard-box { width: 800px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 30px; display: flex; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .info-side { flex: 1; padding: 50px; color: white; display: flex; flex-direction: column; justify-content: center; background: rgba(0,0,0,0.2); border-right: 1px solid rgba(255,255,255,0.05); }
-        .form-side { flex: 1.2; padding: 60px 50px; background: white; }
-        .step-badge { background: #10b981; color: white; padding: 5px 15px; border-radius: 20px; font-size: 11px; font-weight: bold; width: fit-content; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase;}
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 8px; text-transform: uppercase;}
-        .form-group input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 12px; font-size: 14px; box-sizing: border-box; outline: none; transition: 0.3s;}
-        .form-group input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); }
-        .submit-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 15px;}
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3); }
+        :root {
+            --bg-base: #090d16;
+            --bg-card: rgba(15, 23, 42, 0.45);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --text-light: #cbd5e1;
+            --primary: #10b981;
+            --primary-grad: linear-gradient(135deg, #10b981, #059669);
+            --primary-glow: rgba(16, 185, 129, 0.35);
+            --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        body { 
+            margin: 0; 
+            font-family: var(--font-sans); 
+            display: flex; 
+            min-height: 100vh; 
+            background-color: var(--bg-base); 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Pulsing background decorative spheres */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            top: -150px;
+            left: -150px;
+            z-index: -1;
+            animation: floatBlob1 25s infinite alternate ease-in-out;
+            pointer-events: none;
+            filter: blur(100px);
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            bottom: -100px;
+            right: -100px;
+            z-index: -1;
+            animation: floatBlob2 30s infinite alternate ease-in-out;
+            pointer-events: none;
+            filter: blur(100px);
+        }
+
+        @keyframes floatBlob1 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(80px, 60px) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        @keyframes floatBlob2 {
+            0% { transform: translate(0, 0) scale(1.1); }
+            50% { transform: translate(-60px, -50px) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1.1); }
+        }
+        
+        .setup-wrapper {
+            padding: 24px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+        
+        .wizard-box { 
+            display: flex; 
+            width: 850px; 
+            max-width: 100%; 
+            height: 560px; 
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            box-shadow: var(--shadow-lg); 
+            overflow: hidden; 
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(35px);
+            -webkit-backdrop-filter: blur(35px);
+            animation: modalPop 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .info-side { 
+            flex: 1; 
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.55)); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 50px; 
+            text-align: center; 
+            position: relative;
+            overflow: hidden;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .info-side::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .top-spacer { margin-bottom: auto; }
+
+        .info-side h1 { 
+            font-family: var(--font-display);
+            font-size: 42px; 
+            font-weight: 900; 
+            margin: 0; 
+            letter-spacing: -0.04em; 
+            line-height: 1.1;
+            text-shadow: 0 4px 20px var(--primary-glow);
+            background: linear-gradient(180deg, #ffffff, rgba(255, 255, 255, 0.85));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .info-side p { 
+            font-size: 14px; 
+            opacity: 0.9; 
+            margin-top: 15px; 
+            line-height: 1.6; 
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+        
+        .bottom-branding {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 2;
+        }
+
+        .company-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #ffffff;
+            font-family: var(--font-display);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .brand-footer { 
+            font-size: 11px; 
+            opacity: 0.7; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            color: #94a3b8;
+        }
+        
+        .form-side { 
+            flex: 1.2; 
+            padding: 40px 50px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            background: rgba(255, 255, 255, 0.02);
+            overflow-y: auto;
+        }
+
+        .step-badge { 
+            background: rgba(16, 185, 129, 0.12); 
+            color: var(--primary); 
+            padding: 6px 16px; 
+            border-radius: 50px; 
+            font-size: 11px; 
+            font-weight: 800; 
+            font-family: var(--font-display);
+            width: fit-content; 
+            margin: 0 auto 15px auto; 
+            letter-spacing: 1px; 
+            text-transform: uppercase;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+        
+        .form-side h2 { 
+            color: #ffffff; 
+            margin-top: 0; 
+            font-size: 30px; 
+            margin-bottom: 8px; 
+            font-weight: 800; 
+            text-align: center;
+            font-family: var(--font-display);
+            letter-spacing: -0.02em;
+        }
+
+        .form-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        
+        .form-group { 
+            margin-bottom: 18px; 
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label { 
+            display: block; 
+            font-size: 12px; 
+            font-weight: 700; 
+            color: #cbd5e1; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            font-family: var(--font-display);
+        }
+
+        .form-group input[type="text"], .form-group input[type="email"] { 
+            width: 100%; 
+            padding: 13px 16px; 
+            border: 2px solid rgba(255, 255, 255, 0.08); 
+            border-radius: var(--radius-md); 
+            font-size: 14px; 
+            box-sizing: border-box; 
+            transition: var(--transition); 
+            font-family: inherit; 
+            background: rgba(15, 23, 42, 0.6);
+            color: #ffffff;
+            outline: none;
+        }
+        
+        .form-group input[type="text"]:focus, .form-group input[type="email"]:focus { 
+            border-color: var(--primary); 
+            background: rgba(15, 23, 42, 0.8); 
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            border: 2px dashed rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.4);
+            transition: var(--transition);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary);
+            background: rgba(16, 185, 129, 0.08);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            font-size: 13px;
+            color: #cbd5e1;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .submit-btn { 
+            background: var(--primary-grad); 
+            color: white; 
+            border: none; 
+            width: 100%; 
+            padding: 16px; 
+            border-radius: var(--radius-md); 
+            font-size: 16px; 
+            font-weight: 700; 
+            font-family: var(--font-display);
+            cursor: pointer; 
+            transition: var(--transition); 
+            margin-top: 10px; 
+            box-shadow: 0 6px 20px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 30px var(--primary-glow); 
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 850px) {
+            body {
+                align-items: flex-start;
+                background-color: var(--bg-base);
+                overflow-y: auto;
+            }
+            .setup-wrapper {
+                padding: 0;
+            }
+            .wizard-box { 
+                flex-direction: column; 
+                height: auto;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+                border: none;
+            }
+            .info-side { 
+                flex: none; 
+                padding: 50px 20px 60px 20px;
+                border-right: none;
+            }
+            .top-spacer { 
+                display: none; 
+            }
+            .bottom-branding {
+                margin-top: 25px;
+            }
+            .info-side h1 { 
+                font-size: 36px; 
+            }
+            
+            .form-side { 
+                flex: 1;
+                padding: 40px 24px; 
+                background: rgba(255, 255, 255, 0.01);
+                border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+                margin-top: -30px;
+                box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+                justify-content: flex-start;
+                backdrop-filter: blur(20px);
+            }
+            .form-side h2 {
+                font-size: 26px;
+                margin-bottom: 6px;
+                margin-top: 20px;
+            }
+            .form-subtitle {
+                margin-bottom: 25px;
+            }
+            .submit-btn {
+                padding: 18px;
+                font-size: 17px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="wizard-box">
-        <div class="info-side">
-            <h1 style="margin: 0 0 10px 0; font-size: 35px; letter-spacing: 2px;">C-MAP<br>Installation</h1>
-            <p style="color: #aaa; line-height: 1.6;">Admin secured. Now, establish the central corporate identity for this database block.</p>
-        </div>
-        <div class="form-side">
-            <div class="step-badge">Step 2 of 2</div>
-            <h2 style="margin: 0 0 25px 0; color: #1e293b; font-size: 26px;">Corporate Identity</h2>
-            <form method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="form-group"><label>Registered Company Name *</label><input type="text" name="company_name" required></div>
-                <div style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex: 1;"><label>Country</label><input type="text" name="country"></div>
-                    <div class="form-group" style="flex: 1;"><label>Contact Email</label><input type="email" name="email_address"></div>
+    <div class="setup-wrapper">
+        <div class="wizard-box">
+            <div class="info-side">
+                <div class="top-spacer"></div>
+                <span style="font-size: 48px; margin-bottom: 20px; filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.35));">🏢</span>
+                <h1>C-MAP<br>Installation</h1>
+                <p>Admin security key generated. Let's establish the central corporate identity, branding assets, and coordinates for this cloud database tenant block.</p>
+                
+                <div class="bottom-branding">
+                    <div class="company-badge">Step 2 of 2</div>
+                    <div class="brand-footer">Tenant Corporate Setup</div>
                 </div>
-                <div class="form-group">
-                    <label>Official Company Logo</label>
-                    <input type="file" name="company_logo" accept="image/*" style="border: 2px dashed #ccc; padding: 10px; cursor: pointer;">
-                </div>
-                <button type="submit" class="submit-btn">Finalize & Boot System</button>
-            </form>
+            </div>
+            
+            <div class="form-side">
+                <div class="step-badge">Phase 2</div>
+                <h2>Corporate Identity</h2>
+                <div class="form-subtitle">Define the official branding and registry fields</div>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Registered Company Name *</label>
+                        <input type="text" name="company_name" required placeholder="e.g., Green Energy Corp">
+                    </div>
+                    
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 120px;">
+                            <label>Country</label>
+                            <input type="text" name="country" placeholder="e.g., United States">
+                        </div>
+                        <div class="form-group" style="flex: 1.2; min-width: 160px;">
+                            <label>Contact Email</label>
+                            <input type="email" name="email_address" placeholder="e.g., corporate@green.com">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Official Company Logo</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" name="company_logo" accept="image/*">
+                            <div class="file-upload-label">
+                                <span>🖼️</span> <span>Drag and drop or browse logo image</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        Finalize & Boot Portal
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
+
+    <!-- Smart visual micro-interactions -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.querySelector('input[type="file"]');
+            const uploadLabel = document.querySelector('.file-upload-label span:last-child');
+            if (fileInput && uploadLabel) {
+                fileInput.addEventListener('change', (e) => {
+                    if (fileInput.files.length > 0) {
+                        const fileName = fileInput.files[0].name;
+                        uploadLabel.innerHTML = `Selected: <strong style="color: #10b981;">${fileName}</strong>`;
+                    } else {
+                        uploadLabel.innerHTML = 'Drag and drop or browse logo image';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

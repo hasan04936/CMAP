@@ -1,0 +1,388 @@
+{% extends 'management/base.html' %}
+
+{% block title %}System Themes | C-MAP{% endblock %}
+
+{% block extra_head %}
+<style>
+    .theme-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 16px;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .theme-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid var(--border-color);
+        padding: 24px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 180px;
+    }
+
+    .theme-card:hover {
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+        border-color: var(--primary);
+    }
+
+    .theme-btn {
+        width: 100%;
+        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        color: white;
+        font-weight: 800;
+        font-family: var(--font-display);
+        font-size: 14px;
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .theme-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        opacity: 0;
+        transition: var(--transition);
+    }
+
+    .theme-btn:hover::before {
+        opacity: 1;
+    }
+
+    .theme-btn:hover {
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .theme-btn.active-theme {
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 20px var(--primary-glow), inset 0 0 10px rgba(255, 255, 255, 0.3);
+        transform: scale(1.02);
+    }
+
+    .page-header-container {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+ 
+    .back-btn {
+        background: var(--bg-card);
+        color: var(--text-main);
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
+        font-weight: 700;
+        font-family: var(--font-display);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: var(--transition);
+        font-size: 13px;
+    }
+ 
+    .back-btn:hover {
+        transform: translateX(-4px);
+        border-color: var(--primary);
+        box-shadow: 0 4px 15px var(--primary-glow);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <div class="header-left-cluster" style="width: auto;">
+        <div class="page-header-container">
+            <a href="{% url "dashboard" %}" class="back-btn">
+                <span>←</span> Back
+            </a>
+            <h1 class="page-title" style="font-family: var(--font-display); font-weight: 900; font-size: 26px; letter-spacing: -0.02em; color: var(--text-main); text-transform: uppercase; margin: 0;">
+                🎨 Workspace Themes
+            </h1>
+        </div>
+    </div>
+    
+    <div class="header-user-block">
+        <div class="user-avatar" onclick="window.location.href='{% url "user_settings" %}'">
+            {% if request.user.profile.avatar %}
+                <img src="{{ request.user.profile.avatar.url }}">
+            {% else %}
+                {{ request.user.username|make_list|first|upper }}
+            {% endif %}
+        </div>
+        <div class="user-name">{{ request.user.username }}</div>
+    </div>
+</div>
+
+<h3 style="color: var(--text-muted); font-family: var(--font-display); font-weight: 800; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 24px;">
+    Select a custom workspace skin to style dashboard coordinates
+</h3>
+
+<div class="theme-grid">
+    <!-- Themes list -->
+    {% with current_theme=request.user.profile.theme|default:'light' %}
+    
+    <!-- 1. Default Soft Theme -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Soft C-MAP</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Standard premium lavender theme</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="light">
+            <button type="submit" class="theme-btn {% if current_theme == 'light' or current_theme == 'default' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #ffd1f6, #4d2aa0);">
+                <span>Soft Lavender</span> 
+                {% if current_theme == 'light' or current_theme == 'default' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 2. Midnight Blue -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Midnight Blue</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Cool slate steel blue details</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="midnight">
+            <button type="submit" class="theme-btn {% if current_theme == 'midnight' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                <span>Midnight Blue</span> 
+                {% if current_theme == 'midnight' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 3. Emerald Green -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Emerald Green</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Fresh organic forest accents</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="emerald">
+            <button type="submit" class="theme-btn {% if current_theme == 'emerald' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #059669, #10b981);">
+                <span>Emerald Green</span> 
+                {% if current_theme == 'emerald' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 4. Ocean Waves -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Ocean Waves</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Deep sea marine blue tones</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="ocean">
+            <button type="submit" class="theme-btn {% if current_theme == 'ocean' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                <span>Ocean Waves</span> 
+                {% if current_theme == 'ocean' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 5. Royal Amethyst -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Royal Amethyst</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Elite deep purple gradients</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="amethyst">
+            <button type="submit" class="theme-btn {% if current_theme == 'amethyst' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">
+                <span>Amethyst Royal</span> 
+                {% if current_theme == 'amethyst' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 6. Exec Charcoal -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Exec Charcoal</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Corporate slate grey values</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="charcoal">
+            <button type="submit" class="theme-btn {% if current_theme == 'charcoal' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #334155, #475569);">
+                <span>Exec Charcoal</span> 
+                {% if current_theme == 'charcoal' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+
+
+    <!-- 8. Cyberpunk Neon -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Cyberpunk Neon</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Futuristic synthwave pink</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="cyberpunk">
+            <button type="submit" class="theme-btn {% if current_theme == 'cyberpunk' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #db2777, #ec4899);">
+                <span>Cyberpunk Neon</span> 
+                {% if current_theme == 'cyberpunk' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 9. Slate Graphite -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Slate Graphite</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Pencil gray structural skin</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="graphite">
+            <button type="submit" class="theme-btn {% if current_theme == 'graphite' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #4b5563, #6b7280);">
+                <span>Slate Graphite</span> 
+                {% if current_theme == 'graphite' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 10. Rose Gold -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Rose Gold</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Precious rose red metal accents</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="rosegold">
+            <button type="submit" class="theme-btn {% if current_theme == 'rosegold' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #e11d48, #fb7185);">
+                <span>Rose Gold</span> 
+                {% if current_theme == 'rosegold' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 11. Deep Royal -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Deep Royal</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Regal indigo blue borders</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="deeproyal">
+            <button type="submit" class="theme-btn {% if current_theme == 'deeproyal' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #4338ca, #4f46e5);">
+                <span>Deep Royal</span> 
+                {% if current_theme == 'deeproyal' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 12. Twilight Sky -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Twilight Sky</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Purple sunset twilight sky</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="twilight">
+            <button type="submit" class="theme-btn {% if current_theme == 'twilight' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #6b21a8, #c084fc);">
+                <span>Twilight Sky</span> 
+                {% if current_theme == 'twilight' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 13. Crimson Dark -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Crimson Dark</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Dynamic high contrast red details</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="crimson">
+            <button type="submit" class="theme-btn {% if current_theme == 'crimson' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #b91c1c, #dc2626);">
+                <span>Crimson Dark</span> 
+                {% if current_theme == 'crimson' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 14. Forest Canopy -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Forest Canopy</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Lush dark green moss tones</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="forest">
+            <button type="submit" class="theme-btn {% if current_theme == 'forest' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #15803d, #16a34a);">
+                <span>Forest Canopy</span> 
+                {% if current_theme == 'forest' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 15. Warm Mocha -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Warm Mocha</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Rich coffee brown amber accents</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="mocha">
+            <button type="submit" class="theme-btn {% if current_theme == 'mocha' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #b45309, #d97706);">
+                <span>Warm Mocha</span> 
+                {% if current_theme == 'mocha' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- 16. Ice Glacier -->
+    <div class="theme-card">
+        <div>
+            <h4 style="margin: 0 0 4px; color: var(--text-main); font-weight: 800; font-size: 16px;">Ice Glacier</h4>
+            <p style="margin: 0 0 16px; font-size: 12px; color: var(--text-muted); font-weight: 600;">Crisp arctic glacial sky accents</p>
+        </div>
+        <form method="POST" action="{% url "save_theme" %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="theme" value="glacier">
+            <button type="submit" class="theme-btn {% if current_theme == 'glacier' %}active-theme{% endif %}" style="background: linear-gradient(135deg, #0369a1, #0284c7);">
+                <span>Glacier Ice</span> 
+                {% if current_theme == 'glacier' %}<span>✓</span>{% endif %}
+            </button>
+        </form>
+    </div>
+    
+    {% endwith %}
+</div>
+{% endblock %}

@@ -3,6 +3,7 @@
 AppName=C-MAP Enterprise
 AppVersion=1.0
 AppPublisher=Grow Green Trading Co.
+ArchitecturesInstallIn64BitMode=x64compatible
 DefaultDirName={autopf}\C-MAP Enterprise
 DisableProgramGroupPage=yes
 
@@ -19,12 +20,17 @@ PrivilegesRequired=admin
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; --- The Core Files ---
 ; Grabs the main EXE
 Source: "dist\CMAP_Enterprise\CMAP_Enterprise.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Grabs everything else (internal folder, ngrok, database) BUT blocks test logs!
 Source: "dist\CMAP_Enterprise\*"; DestDir: "{app}"; Excludes: "*.txt, *.log"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Copies the default clean SQLite database
+Source: "db.sqlite3"; DestDir: "{app}"; Flags: ignoreversion
+
+; Copies the dynamic card scenery preview image placeholder
+Source: "media\default_card_preview.png"; DestDir: "{app}\media"; Flags: ignoreversion
 
 [Dirs]
 ; --- Force Clean Folders ---
@@ -43,3 +49,25 @@ Name: "{autoprograms}\C-MAP Enterprise"; Filename: "{app}\CMAP_Enterprise.exe"
 [Run]
 ; --- Auto-Launch after Install ---
 Filename: "{app}\CMAP_Enterprise.exe"; Description: "{cm:LaunchProgram,C-MAP Enterprise}"; Flags: nowait postinstall skipifsilent
+
+[Registry]
+; Write the installation path to the registry
+Root: HKA; Subkey: "Software\CMAPEnterprise"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
+; Write the machine's unique hardware ID to the registry
+Root: HKA; Subkey: "Software\CMAPEnterprise"; ValueType: string; ValueName: "MachineID"; ValueData: "{code:GetMachineGuid}"; Flags: uninsdeletekey
+
+[Code]
+// Helper function to read the Windows MachineGuid from HKLM
+function GetMachineGuid(Param: String): String;
+var
+  MachineGuid: String;
+begin
+  if RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Cryptography', 'MachineGuid', MachineGuid) then
+  begin
+    Result := MachineGuid;
+  end
+  else
+  begin
+    Result := '';
+  end;
+end;

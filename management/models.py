@@ -96,6 +96,58 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def card_header_value(self):
+        # 1. Search for a field containing "name" in the name first
+        for val in self.custom_values.all():
+            if 'name' in val.custom_field.field_name.lower() and val.value:
+                return val
+        
+        # 2. Fallback to the first show_on_card field
+        show_card_val = self.custom_values.filter(custom_field__show_on_card=True).first()
+        if show_card_val:
+            return show_card_val
+            
+        # 3. Fallback to the very first text field
+        for val in self.custom_values.all():
+            if val.custom_field.field_type == 'text' and val.value:
+                return val
+                
+        # 4. Fallback to any first custom field with a value
+        for val in self.custom_values.all():
+            if val.value:
+                return val
+        return None
+
+    @property
+    def card_body_values(self):
+        header = self.card_header_value
+        if header:
+            return self.custom_values.filter(custom_field__show_on_card=True).exclude(id=header.id).order_by('custom_field__id')
+        return self.custom_values.filter(custom_field__show_on_card=True).order_by('custom_field__id')
+
+    @property
+    def card_image_value(self):
+        for val in self.custom_values.all():
+            if val.custom_field.field_type == 'file' and val.file_value:
+                return val
+        return None
+
+    @property
+    def card_expire_value(self):
+        for val in self.custom_values.all():
+            if 'expire' in val.custom_field.field_name.lower() and val.value:
+                return val
+        return None
+
+    @property
+    def card_issue_value(self):
+        for val in self.custom_values.all():
+            name_lower = val.custom_field.field_name.lower()
+            if ('issue' in name_lower or 'valid' in name_lower or 'start' in name_lower) and val.value:
+                return val
+        return None
     
 # NEW: Defines the custom questions for a Sub-Category
 class CustomField(models.Model):
